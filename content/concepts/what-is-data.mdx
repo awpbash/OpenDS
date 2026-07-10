@@ -1,0 +1,117 @@
+---
+title: "What Is Data?"
+slug: "what-is-data"
+description: "What we actually mean by data, how observations become records, and why the shape of a dataset quietly decides everything you can do with it."
+status: "draft"
+difficulty: "beginner"
+family: "foundations"
+cover: "/images/concepts/what-is-data/cover.png"
+coverAlt: "Loose observations lining up into the rows of a table"
+published: 2026-07-05
+authors:
+  - claude
+reviewers: []
+lastReviewed: null
+prerequisites: []
+partOf: []
+papers: []
+projects: []
+cheatSheets: []
+tags:
+  - fundamentals
+---
+
+> **Sample article.** This is a placeholder written to exercise the article
+> pipeline: headings, math, code, callouts, tables, and figures. The real
+> version will be rewritten by a human author before review.
+
+Every data science method, from a simple average to a large language model,
+starts with the same raw material. Before learning any technique, it is worth
+being precise about what that material actually is.
+
+## The problem this concept solves
+
+Suppose you want to know whether students who sleep more score better on
+exams. You cannot analyse "sleep" or "scores" directly. You can only analyse
+recorded observations: this student slept 6.5 hours, that student scored 74.
+Data is the bridge between a question about the world and something a
+computer can actually work with.
+
+The gap between the world and its recording is where most real problems
+live. What got measured, what got skipped, and what got rounded off will
+shape every conclusion you draw later.
+
+## From observations to a dataset
+
+A single recorded fact is an **observation**. A structured collection of
+observations is a **dataset**. The most common shape is a table: one row per
+thing observed, one column per property recorded.
+
+| student | hours_slept | exam_score |
+| ------- | ----------- | ---------- |
+| A       | 6.5         | 74         |
+| B       | 8.0         | 81         |
+| C       | 5.0         | 62         |
+
+In notation we often write a dataset of $n$ observations as
+
+$$
+\mathcal{D} = \{(x_i, y_i)\}_{i=1}^{n}
+$$
+
+where $x_i$ holds the recorded properties of observation $i$ (here, hours
+slept) and $y_i$ is the outcome we care about (the exam score). The notation
+looks abstract, but it is just the table above with letters instead of
+column headings.
+
+<AnimatedFigure
+  src="/videos/concepts/what-is-data/observations-to-rows.mp4"
+  poster="/images/concepts/what-is-data/observations.svg"
+  caption="Figure 1. Each real-world observation becomes one row of the table. Each measured property becomes one column."
+/>
+
+## Seeing the same thing in code
+
+The table, the notation, and the code below are three views of one idea:
+
+```python
+# One row per student, one column per recorded property.
+dataset = [
+    {"student": "A", "hours_slept": 6.5, "exam_score": 74},
+    {"student": "B", "hours_slept": 8.0, "exam_score": 81},
+    {"student": "C", "hours_slept": 5.0, "exam_score": 62},
+]
+
+n = len(dataset)  # number of observations
+print(f"{n} observations, {len(dataset[0])} recorded properties each")
+```
+
+> **Common misconception.** Data is not the same as truth. A dataset is a
+> partial, imperfect recording of the world, filtered through whatever
+> someone decided to measure. Treating recorded values as reality itself is
+> the root of many analysis mistakes.
+
+## Explore it yourself
+
+Reading about the three views is one thing. Feeling them stay in sync is
+another. In the explorer below, every observation you record shows up as a
+point, a row, and a count in the notation, all at once.
+
+<ObservationsExplorer />
+
+If the plot, the table, and the $n$ in the notation never disagree, that is
+because they cannot: they are three projections of the same underlying
+collection of observations.
+
+## When this idea matters
+
+It matters immediately. The moment you ask what each row represents and
+what each column actually measured, you are doing the first real step of
+every analysis. Datasets where rows or columns mean inconsistent things
+break every method built on top of them.
+
+## What to learn next
+
+The natural next step is **Types of Data**: not all recorded values behave
+the same way, and the type of each column decides which summaries and
+models make sense at all.

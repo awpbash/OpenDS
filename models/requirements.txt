@@ -1,0 +1,3 @@
+# Training runs locally on CPU, never in CI. Install with:
+#   pip install -r models/requirements.txt --index-url https://download.pytorch.org/whl/cpu
+torch==2.13.0

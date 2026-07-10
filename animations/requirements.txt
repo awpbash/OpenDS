@@ -1,0 +1,3 @@
+# Renders run locally, never in CI. Install with:
+#   pip install -r animations/requirements.txt
+manim==0.20.1

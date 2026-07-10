@@ -1,0 +1,80 @@
+---
+import type { ConceptStatus, Family } from "@opends/content-schema";
+import { FAMILY_LABELS } from "@opends/content-schema";
+import { STATUS_LABELS } from "../lib/content";
+
+interface Props {
+  type: "Concept" | "Paper" | "Project";
+  href: string;
+  title: string;
+  description: string;
+  status: ConceptStatus;
+  family?: Family;
+  minutes: number;
+  authors: string;
+  cover?: string;
+  coverAlt?: string;
+}
+
+const {
+  type,
+  href,
+  title,
+  description,
+  status,
+  family,
+  minutes,
+  authors,
+  cover,
+} = Astro.props;
+---
+
+<li
+  data-card
+  data-family={family ?? "all"}
+  class="border-b border-hairline py-6"
+>
+  <article class="flex items-start gap-5 sm:gap-8">
+    <div class="min-w-0 grow">
+      <p
+        class="font-sans text-[0.8125rem] tracking-wide text-ink-faint uppercase"
+      >
+        {type}{family && <> · {FAMILY_LABELS[family]}</>}
+      </p>
+      <a href={href} class="group mt-1.5 block">
+        <h3
+          class="font-sans text-lg font-semibold tracking-tight group-hover:text-accent sm:text-xl"
+        >
+          {title}
+        </h3>
+      </a>
+      <p
+        class="mt-1.5 line-clamp-3 max-w-[62ch] font-serif leading-relaxed text-ink-muted sm:line-clamp-2"
+      >
+        {description}
+      </p>
+      <p class="mt-3 font-sans text-[0.8125rem] text-ink-faint">
+        Written by {authors} · {minutes} min read ·{" "}
+        {
+          status === "curated" ? (
+            <span class="text-accent">✓ {STATUS_LABELS[status]}</span>
+          ) : (
+            <span>{STATUS_LABELS[status]}</span>
+          )
+        }
+      </p>
+    </div>
+    {
+      cover && (
+        <a href={href} tabindex="-1" aria-hidden="true" class="shrink-0">
+          <img
+            src={cover}
+            alt=""
+            loading="lazy"
+            class="h-20 w-28 rounded border border-hairline bg-[#fdfcfa] object-cover sm:h-[7.25rem] sm:w-44"
+          />
+        </a>
+      )
+    }
+  </article>
+</li>

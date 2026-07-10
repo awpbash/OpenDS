@@ -1,0 +1,138 @@
+---
+import "@fontsource-variable/inter";
+import "@fontsource-variable/source-serif-4";
+import "@fontsource-variable/source-serif-4/wght-italic.css";
+import "@fontsource-variable/jetbrains-mono";
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="article" />
+    <script is:inline>
+      // Runs before paint: apply the saved theme, or the system preference.
+      (() => {
+        const saved = localStorage.getItem("opends-theme");
+        const dark =
+          saved === "dark" ||
+          (saved === null &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
+      })();
+    </script>
+  </head>
+  <body class="flex min-h-screen flex-col bg-paper text-ink antialiased">
+    <header class="sticky top-0 z-40 border-b border-hairline bg-paper">
+      <div
+        class="gutter container-wide flex min-h-12 flex-wrap items-center justify-between"
+      >
+        <a href="/" class="text-[0.9375rem] font-semibold tracking-tight">
+          OpenDS<span class="text-accent">.</span>
+        </a>
+        <nav
+          class="flex grow items-center justify-end gap-2 pb-1 text-xs text-ink-muted sm:gap-5 sm:pb-0 sm:text-sm"
+        >
+          <a href="/concepts" class="hover:text-ink">Concepts</a>
+          <a href="/papers" class="hover:text-ink">Papers</a>
+          <a href="/projects" class="hover:text-ink">Projects</a>
+          <a href="/map" class="hover:text-ink">Map</a>
+          <a href="/about" class="hover:text-ink">About</a>
+          <button
+            id="theme-toggle"
+            type="button"
+            aria-label="Switch between light and dark theme"
+            class="flex h-8 w-8 items-center justify-center rounded-full hover:bg-surface"
+          >
+            <svg
+              class="hidden h-4 w-4 dark:block"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="4.5"></circle>
+              <path
+                d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5 5l1.6 1.6M17.4 17.4 19 19M19 5l-1.6 1.6M6.6 17.4 5 19"
+              ></path>
+            </svg>
+            <svg
+              class="h-4 w-4 dark:hidden"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"
+              ></path>
+            </svg>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <slot />
+
+    <footer class="mt-auto border-t border-hairline">
+      <div
+        class="gutter container-wide flex flex-wrap items-baseline gap-x-2 py-4 text-sm text-ink-faint"
+      >
+        <span class="font-sans font-medium text-ink-muted">OpenDS</span>
+        <span>Learning Data Science by teaching it.</span>
+      </div>
+    </footer>
+
+    <script>
+      const toggle = document.getElementById("theme-toggle");
+      let transitionTimer: ReturnType<typeof setTimeout> | undefined;
+
+      const applyTheme = () => {
+        const dark = document.documentElement.classList.toggle("dark");
+        localStorage.setItem("opends-theme", dark ? "dark" : "light");
+      };
+
+      toggle?.addEventListener("click", () => {
+        const reduceMotion = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        ).matches;
+        if (reduceMotion) {
+          applyTheme();
+          return;
+        }
+        // Full-page crossfade between themes. View Transitions where
+        // available, a color transition on every element as the fallback.
+        if (document.startViewTransition) {
+          document.startViewTransition(applyTheme);
+          return;
+        }
+        const root = document.documentElement;
+        root.classList.add("theme-transition");
+        applyTheme();
+        clearTimeout(transitionTimer);
+        transitionTimer = setTimeout(
+          () => root.classList.remove("theme-transition"),
+          250,
+        );
+      });
+    </script>
+  </body>
+</html>

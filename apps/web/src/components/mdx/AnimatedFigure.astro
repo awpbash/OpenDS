@@ -1,0 +1,107 @@
+---
+// Explanatory animation with a caption. No autoplay: the reader stays in
+// control, which also covers reduced-motion preferences. Controls are our
+// own and live below the video, so pausing never covers the frame with a
+// native control bar.
+interface Props {
+  src: string;
+  poster?: string;
+  caption: string;
+}
+
+const { src, poster, caption } = Astro.props;
+---
+
+<figure class="anim-figure">
+  <video
+    muted
+    loop
+    playsinline
+    preload="metadata"
+    poster={poster}
+    class="w-full cursor-pointer rounded border border-hairline bg-[#fdfcfa]"
+  >
+    <source src={src} type="video/mp4" />
+    Your browser does not support embedded video. {caption}
+  </video>
+  <div class="mt-2 flex items-center gap-3 font-sans">
+    <button
+      type="button"
+      data-role="toggle"
+      aria-label="Play animation"
+      class="w-16 rounded border border-hairline px-2 py-1 text-xs text-ink-muted hover:border-accent hover:text-accent"
+    >
+      Play
+    </button>
+    <input
+      type="range"
+      data-role="seek"
+      min="0"
+      max="100"
+      step="0.1"
+      value="0"
+      aria-label="Animation progress"
+      class="h-1 min-w-0 flex-1 accent-(--accent)"
+    />
+    <span
+      data-role="time"
+      class="w-10 text-right font-mono text-xs text-ink-faint tabular-nums"
+    >
+      0:00
+    </span>
+  </div>
+  <figcaption
+    class="mt-3 text-center font-sans text-sm leading-relaxed text-ink-muted"
+  >
+    {caption}
+  </figcaption>
+</figure>
+
+<script>
+  function formatTime(seconds: number): string {
+    const whole = Math.floor(seconds);
+    return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
+  }
+
+  document.querySelectorAll<HTMLElement>(".anim-figure").forEach((figure) => {
+    const video = figure.querySelector("video");
+    const toggle = figure.querySelector<HTMLButtonElement>(
+      '[data-role="toggle"]',
+    );
+    const seek = figure.querySelector<HTMLInputElement>('[data-role="seek"]');
+    const time = figure.querySelector<HTMLElement>('[data-role="time"]');
+    if (!video || !toggle || !seek || !time) return;
+
+    const setLabel = () => {
+      const playing = !video.paused;
+      toggle.textContent = playing ? "Pause" : "Play";
+      toggle.setAttribute(
+        "aria-label",
+        playing ? "Pause animation" : "Play animation",
+      );
+    };
+
+    const togglePlayback = () => {
+      if (video.paused) void video.play();
+      else video.pause();
+    };
+
+    toggle.addEventListener("click", togglePlayback);
+    video.addEventListener("click", togglePlayback);
+    video.addEventListener("play", setLabel);
+    video.addEventListener("pause", setLabel);
+
+    video.addEventListener("timeupdate", () => {
+      if (video.duration) {
+        seek.value = String((video.currentTime / video.duration) * 100);
+      }
+      time.textContent = formatTime(video.currentTime);
+    });
+
+    seek.addEventListener("input", () => {
+      if (video.duration) {
+        video.currentTime = (Number(seek.value) / 100) * video.duration;
+      }
+    });
+  });
+</script>

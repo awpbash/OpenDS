@@ -1,0 +1,125 @@
+---
+import { getCollection } from "astro:content";
+import { FAMILIES, FAMILY_LABELS } from "@opends/content-schema";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { STATUS_LABELS } from "../../lib/content";
+
+const concepts = (await getCollection("concepts")).sort((a, b) =>
+  a.data.title.localeCompare(b.data.title),
+);
+---
+
+<BaseLayout
+  title="Concepts | OpenDS"
+  description="Peer-reviewed explanations of Data Science and AI concepts, connected as a knowledge graph."
+>
+  <main class="gutter container-reading pt-10 pb-14">
+    <h1 class="font-sans text-3xl font-semibold tracking-tight">Concepts</h1>
+    <p class="mt-3 font-serif text-lg leading-relaxed text-ink-muted">
+      Foundational and practical ideas, written to be understood and reviewed by
+      peers. Each concept declares what it builds on, so the collection grows
+      into a connected map rather than a pile of posts. The{" "}
+      <a href="/map" class="text-accent hover:underline">map</a>{" "}
+      shows where each one sits.
+    </p>
+
+    <nav
+      aria-label="Filter by family"
+      class="rail-scroll gutter-bleed mt-8 overflow-x-auto border-b border-hairline"
+    >
+      <div class="flex w-max gap-2 pb-3 font-sans text-sm">
+        <button
+          type="button"
+          data-chip="all"
+          aria-pressed="true"
+          class="rounded-full border border-hairline px-3.5 py-1 whitespace-nowrap text-ink-muted hover:text-ink aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-paper"
+        >
+          All
+        </button>
+        {
+          FAMILIES.map((family) => (
+            <button
+              type="button"
+              data-chip={family}
+              aria-pressed="false"
+              class="rounded-full border border-hairline px-3.5 py-1 whitespace-nowrap text-ink-muted hover:text-ink aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-paper"
+            >
+              {FAMILY_LABELS[family]}
+            </button>
+          ))
+        }
+      </div>
+    </nav>
+
+    <ul class="mt-2">
+      {
+        concepts.map((concept) => (
+          <li
+            data-card
+            data-family={concept.data.family}
+            class="border-b border-hairline py-6"
+          >
+            <p class="font-sans text-[0.8125rem] tracking-wide text-ink-faint uppercase">
+              {STATUS_LABELS[concept.data.status]} ·{" "}
+              {FAMILY_LABELS[concept.data.family]} · {concept.data.difficulty}
+            </p>
+            <a
+              href={`/concepts/${concept.data.slug}`}
+              class="mt-1 block font-sans text-xl font-semibold tracking-tight hover:text-accent"
+            >
+              {concept.data.title}
+            </a>
+            <p class="mt-2 font-serif leading-relaxed text-ink-muted">
+              {concept.data.description}
+            </p>
+          </li>
+        ))
+      }
+    </ul>
+
+    <div id="filter-empty" class="hidden border-b border-hairline py-10">
+      <p
+        class="font-sans text-sm font-semibold tracking-wide text-ink-muted uppercase"
+      >
+        Nothing here yet
+      </p>
+      <p class="mt-3 font-serif leading-relaxed text-ink-muted">
+        No <span data-empty-family>matching</span> articles have landed so far. The{
+          " "
+        }
+        <a href="/map" class="text-accent hover:underline">map</a>{" "}
+        shows what is planned, and the{" "}
+        <a href="/about#join-in" class="text-accent hover:underline"
+          >contributing guide</a
+        >{" "}
+        shows how to write the first one.
+      </p>
+    </div>
+  </main>
+
+  <script>
+    // Family filter: pure show/hide, no navigation, no state library.
+    const chips = document.querySelectorAll<HTMLButtonElement>("[data-chip]");
+    const cards = document.querySelectorAll<HTMLElement>("[data-card]");
+    const empty = document.getElementById("filter-empty");
+    const emptyFamily = document.querySelector("[data-empty-family]");
+
+    chips.forEach((chip) => {
+      chip.addEventListener("click", () => {
+        const family = chip.dataset.chip;
+        chips.forEach((other) =>
+          other.setAttribute("aria-pressed", String(other === chip)),
+        );
+        let visible = 0;
+        cards.forEach((card) => {
+          const show = family === "all" || card.dataset.family === family;
+          card.classList.toggle("hidden", !show);
+          if (show) visible += 1;
+        });
+        if (empty) empty.classList.toggle("hidden", visible !== 0);
+        if (emptyFamily)
+          emptyFamily.textContent = chip.textContent?.trim() ?? "";
+      });
+    });
+  </script>
+</BaseLayout>

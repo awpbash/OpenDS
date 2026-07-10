@@ -1,0 +1,298 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const concepts = await getCollection("concepts");
+const contributors = (await getCollection("contributors")).sort((a, b) =>
+  a.data.name.localeCompare(b.data.name),
+);
+
+// Qualitative credit only: what each person worked on, never counts or
+// ranks. See CLAUDE.md section 25.
+const people = contributors.map((contributor) => ({
+  ...contributor,
+  initials: contributor.data.name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join(""),
+  wrote: concepts
+    .filter((concept) => concept.data.authors.includes(contributor.id))
+    .sort((a, b) => a.data.title.localeCompare(b.data.title)),
+  reviewed: concepts
+    .filter((concept) => concept.data.reviewers.includes(contributor.id))
+    .sort((a, b) => a.data.title.localeCompare(b.data.title)),
+}));
+
+const loop = [
+  "Learn",
+  "Explain",
+  "Discuss",
+  "Review",
+  "Refine",
+  "Publish",
+  "Connect",
+  "Learn deeper",
+];
+
+// Principles are inlined in the markup below: the first one carries an
+// external link, so plain strings stopped being enough.
+---
+
+<BaseLayout
+  title="About | OpenDS"
+  description="OpenDS is a small community that learns Data Science and AI by teaching it: writing explanations, peer-reviewing them, and connecting them into a knowledge graph."
+>
+  <main class="gutter container-reading pt-10 pb-14">
+    <h1
+      class="max-w-[24ch] font-serif text-[clamp(2rem,4vw,3rem)] leading-[1.15] font-medium tracking-tight"
+    >
+      About OpenDS
+    </h1>
+    <p class="mt-5 font-serif text-lg leading-relaxed text-ink-muted">
+      AI has made it possible to learn about everything at once, and we did.
+      Answers arrive in seconds, summaries of whole fields fit on one screen,
+      and it all feels understood until the moment you actually need it. Then
+      you try to explain the idea, or defend it in a review, or build something
+      on top of it, and discover the understanding was never really yours.
+    </p>
+    <p class="mt-4 font-serif text-lg leading-relaxed text-ink-muted">
+      OpenDS is a small community of people relearning Data Science and AI by
+      teaching it to each other. When one of us finally understands something
+      properly, we write it down the way we wish someone had explained it to us,
+      and then the others pull the draft apart until it holds. Nothing gets
+      published until someone who did not write it has worked through every
+      claim. Article by article, the results link into a{" "}
+      <a href="/map" class="text-accent hover:underline">knowledge map</a>{" "}
+      that a future learner might find useful.
+    </p>
+
+    <section aria-labelledby="how-it-works" class="mt-14">
+      <h2
+        id="how-it-works"
+        class="font-sans text-sm font-semibold tracking-wide text-ink-muted uppercase"
+      >
+        How it works
+      </h2>
+      <p
+        class="mt-4 flex max-w-full flex-wrap items-baseline gap-x-2 gap-y-1 font-mono text-[0.8125rem] tracking-wide text-ink-muted"
+      >
+        {
+          loop.map((step, i) => (
+            <Fragment>
+              <span>{step}</span>
+              {i < loop.length - 1 && (
+                <span aria-hidden="true" class="text-ink-faint">
+                  →
+                </span>
+              )}
+            </Fragment>
+          ))
+        }
+      </p>
+      <ul class="mt-6">
+        <li class="border-t border-hairline py-5">
+          <h3 class="font-sans text-base font-semibold tracking-tight">
+            Learn by teaching
+          </h3>
+          <p class="mt-1.5 font-serif leading-relaxed text-ink-muted">
+            Explaining a concept in writing is the fastest way to discover you
+            only half understood it. The idea is old and has a name, the{" "}
+            <a
+              href="https://fs.blog/feynman-technique/"
+              class="text-accent hover:underline"
+            >
+              Feynman Technique
+            </a>: explain the concept in plain language, watch where your
+            explanation breaks down, and go back to study until it does not.
+            Every author here comes out the other side knowing the topic better
+            than when they started.
+          </p>
+        </li>
+        <li class="border-t border-hairline py-5">
+          <h3 class="font-sans text-base font-semibold tracking-tight">
+            Peer review by default
+          </h3>
+          <p class="mt-1.5 font-serif leading-relaxed text-ink-muted">
+            Before anything is published, a reviewer works through the draft,
+            questions the claims, and pushes on the intuition until it actually
+            convinces. Review here is how two people learn at once, not a gate
+            to keep anyone out.
+          </p>
+        </li>
+        <li class="border-t border-hairline py-5">
+          <h3 class="font-sans text-base font-semibold tracking-tight">
+            Curated over crowded
+          </h3>
+          <p class="mt-1.5 font-serif leading-relaxed text-ink-muted">
+            We would rather publish twenty excellent, connected pages than two
+            hundred shallow ones, so nothing gets rushed out the door. Taking
+            months over an article is fine. Publishing something misleading is
+            not.
+          </p>
+        </li>
+        <li class="border-t border-b border-hairline py-5">
+          <h3 class="font-sans text-base font-semibold tracking-tight">
+            Connected knowledge
+          </h3>
+          <p class="mt-1.5 font-serif leading-relaxed text-ink-muted">
+            Every concept states what you should learn before it and what it
+            opens up next, and the map is drawn directly from those
+            declarations. It never drifts out of date, because it cannot.
+          </p>
+        </li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="the-people" class="mt-14">
+      <h2
+        id="the-people"
+        class="font-sans text-sm font-semibold tracking-wide text-ink-muted uppercase"
+      >
+        The people
+      </h2>
+      <p class="mt-4 font-serif leading-relaxed text-ink-muted">
+        OpenDS began as a group of friends who did not want to stop learning
+        together after graduation. Some of us write, some review, some build the
+        widgets and animations that make an explanation finally click. Credit
+        here simply says who worked on what. There are no counts and no
+        leaderboards, because none of those ever made anyone a better teacher.
+      </p>
+      <ul class="mt-6 grid gap-5 sm:grid-cols-2">
+        {
+          people.map((person) => (
+            <li class="rounded border border-hairline p-5">
+              <div class="flex items-center gap-4">
+                {person.data.avatar ? (
+                  <img
+                    src={person.data.avatar}
+                    alt=""
+                    class="h-14 w-14 shrink-0 rounded-full border border-hairline object-cover"
+                  />
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-hairline bg-surface font-sans text-lg font-semibold text-ink-muted"
+                  >
+                    {person.initials}
+                  </span>
+                )}
+                <div class="min-w-0">
+                  <h3 class="font-sans text-lg font-semibold tracking-tight">
+                    {person.data.name}
+                  </h3>
+                  {person.data.role && (
+                    <p class="font-sans text-sm text-ink-muted">
+                      {person.data.role}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {person.data.bio && (
+                <p class="mt-4 font-serif text-[0.9375rem] leading-relaxed text-ink-muted">
+                  {person.data.bio}
+                </p>
+              )}
+
+              {person.data.interests.length > 0 && (
+                <p class="mt-3 font-sans text-[0.8125rem] text-ink-faint">
+                  Into {person.data.interests.join(", ")}
+                </p>
+              )}
+
+              {(person.wrote.length > 0 || person.reviewed.length > 0) && (
+                <div class="mt-4 space-y-1 border-t border-hairline pt-3 font-sans text-sm text-ink-muted">
+                  {person.wrote.length > 0 && (
+                    <p>
+                      Wrote{" "}
+                      {person.wrote.map((concept, i) => (
+                        <Fragment>
+                          <a
+                            href={`/concepts/${concept.data.slug}`}
+                            class="text-ink underline decoration-hairline underline-offset-4 hover:text-accent"
+                          >
+                            {concept.data.title}
+                          </a>
+                          {i < person.wrote.length - 1 && ", "}
+                        </Fragment>
+                      ))}
+                    </p>
+                  )}
+                  {person.reviewed.length > 0 && (
+                    <p>
+                      Reviewed{" "}
+                      {person.reviewed.map((concept, i) => (
+                        <Fragment>
+                          <a
+                            href={`/concepts/${concept.data.slug}`}
+                            class="text-ink underline decoration-hairline underline-offset-4 hover:text-accent"
+                          >
+                            {concept.data.title}
+                          </a>
+                          {i < person.reviewed.length - 1 && ", "}
+                        </Fragment>
+                      ))}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {(person.data.github ||
+                person.data.linkedin ||
+                person.data.website) && (
+                <p class="mt-4 flex flex-wrap gap-x-4 font-sans text-sm text-ink-muted">
+                  {person.data.github && (
+                    <a
+                      href={`https://github.com/${person.data.github}`}
+                      class="hover:text-accent"
+                    >
+                      GitHub
+                    </a>
+                  )}
+                  {person.data.linkedin && (
+                    <a href={person.data.linkedin} class="hover:text-accent">
+                      LinkedIn
+                    </a>
+                  )}
+                  {person.data.website && (
+                    <a href={person.data.website} class="hover:text-accent">
+                      Website
+                    </a>
+                  )}
+                </p>
+              )}
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section aria-labelledby="join-in" class="mt-14" id="join-in">
+      <h2
+        class="font-sans text-sm font-semibold tracking-wide text-ink-muted uppercase"
+      >
+        Join in
+      </h2>
+      <div class="mt-4 font-serif leading-relaxed text-ink-muted">
+        <p>
+          You do not need to be a software engineer to write for OpenDS. If you
+          are comfortable with git, you write your article in MDX and open a
+          pull request like any other change. If you are not, you draft in
+          whatever writing tool you like and a maintainer ports it over for you.
+          Both paths end in the same friendly peer review, and both count
+          exactly the same.
+        </p>
+        <p class="mt-4">
+          If you are not sure what to write, the{" "}
+          <a href="/map" class="text-accent hover:underline">map</a>{" "}
+          is full of planned concepts waiting for an author to claim them. The full
+          guide lives in the repository at{" "}
+          <code class="font-mono text-[0.85em] tracking-tight text-ink"
+            >docs/CONTRIBUTING.md</code
+          >, alongside the style and review guides.
+        </p>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

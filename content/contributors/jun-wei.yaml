@@ -1,0 +1,12 @@
+# Contributor registry entry. The filename (without .yaml) is the id
+# used in article frontmatter under authors / reviewers.
+name: Jun Wei
+# Fill these in to complete your About page card:
+# role: Data Scientist at ...
+# interests:
+#   - LLMs
+#   - visualisation
+# github: your-github-username
+# linkedin: https://www.linkedin.com/in/your-handle
+# website: https://...
+# avatar: /images/contributors/jun-wei.jpg   (drop the photo in apps/web/public/images/contributors/)

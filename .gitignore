@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+.astro/
+.turbo/
+.vercel/
+
+# environment
+.env
+.env.*
+!.env.example
+
+# manim intermediate output (final assets live in animations/renders/)
+animations/media/
+
+# training corpus (the training script re-downloads it when missing)
+models/data/
+
+# browser-testing scratch output
+.playwright-mcp/
+
+# misc
+*.log
+.DS_Store

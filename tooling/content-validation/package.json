@@ -1,0 +1,19 @@
+{
+  "name": "@opends/content-validation",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "node src/validate.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@opends/content-schema": "workspace:*",
+    "gray-matter": "^4.0.3",
+    "yaml": "^2.6.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0"
+  }
+}

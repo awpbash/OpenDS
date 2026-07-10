@@ -1,0 +1,56 @@
+<svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="fig-title">
+  <title id="fig-title">Observations from the world recorded as rows in a table</title>
+  <style>
+    text { font-family: ui-sans-serif, system-ui, sans-serif; fill: #404040; }
+    .label { font-size: 14px; }
+    .cell { font-size: 13px; }
+    .head { font-size: 13px; font-weight: 600; fill: #0f766e; }
+    .muted { fill: #a3a3a3; font-size: 12px; }
+  </style>
+
+  <!-- the world: three observations -->
+  <g>
+    <circle cx="90" cy="90" r="26" fill="none" stroke="#0f766e" stroke-width="1.5" />
+    <text x="90" y="95" text-anchor="middle" class="label">A</text>
+    <circle cx="150" cy="160" r="26" fill="none" stroke="#0f766e" stroke-width="1.5" />
+    <text x="150" y="165" text-anchor="middle" class="label">B</text>
+    <circle cx="80" cy="220" r="26" fill="none" stroke="#0f766e" stroke-width="1.5" />
+    <text x="80" y="225" text-anchor="middle" class="label">C</text>
+    <text x="115" y="275" text-anchor="middle" class="muted">observations in the world</text>
+  </g>
+
+  <!-- arrow -->
+  <g stroke="#737373" stroke-width="1.5" fill="none">
+    <line x1="215" y1="155" x2="305" y2="155" />
+    <path d="M 297 149 L 307 155 L 297 161" />
+  </g>
+  <text x="260" y="140" text-anchor="middle" class="muted">recording</text>
+
+  <!-- the table -->
+  <g>
+    <rect x="340" y="70" width="330" height="170" fill="none" stroke="#d4d4d4" stroke-width="1" />
+    <rect x="340" y="70" width="330" height="42" fill="#f0fdfa" stroke="#d4d4d4" stroke-width="1" />
+    <line x1="340" y1="155" x2="670" y2="155" stroke="#e5e5e5" />
+    <line x1="340" y1="197" x2="670" y2="197" stroke="#e5e5e5" />
+    <line x1="450" y1="70" x2="450" y2="240" stroke="#e5e5e5" />
+    <line x1="560" y1="70" x2="560" y2="240" stroke="#e5e5e5" />
+
+    <text x="395" y="96" text-anchor="middle" class="head">student</text>
+    <text x="505" y="96" text-anchor="middle" class="head">hours_slept</text>
+    <text x="615" y="96" text-anchor="middle" class="head">exam_score</text>
+
+    <text x="395" y="138" text-anchor="middle" class="cell">A</text>
+    <text x="505" y="138" text-anchor="middle" class="cell">6.5</text>
+    <text x="615" y="138" text-anchor="middle" class="cell">74</text>
+
+    <text x="395" y="180" text-anchor="middle" class="cell">B</text>
+    <text x="505" y="180" text-anchor="middle" class="cell">8.0</text>
+    <text x="615" y="180" text-anchor="middle" class="cell">81</text>
+
+    <text x="395" y="222" text-anchor="middle" class="cell">C</text>
+    <text x="505" y="222" text-anchor="middle" class="cell">5.0</text>
+    <text x="615" y="222" text-anchor="middle" class="cell">62</text>
+
+    <text x="505" y="270" text-anchor="middle" class="muted">one row per observation, one column per property</text>
+  </g>
+</svg>

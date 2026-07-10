@@ -1,0 +1,686 @@
+---
+title: "Transformers"
+slug: "transformers"
+description: "Lecture-note treatment of the transformer: embeddings, attention matrices, the forward pass shape by shape, backpropagation, training, and a live model in your browser."
+status: "draft"
+difficulty: "advanced"
+family: "deep-learning"
+cover: "/images/concepts/transformers/cover.png"
+coverAlt: "Attention arcs reaching back from the last token to earlier tokens"
+published: 2026-07-09
+authors:
+  - claude
+reviewers: []
+lastReviewed: null
+prerequisites:
+  - attention
+  - embeddings
+  - gradient-descent
+partOf: []
+papers: []
+projects: []
+cheatSheets: []
+tags:
+  - deep-learning
+  - nlp
+  - attention
+---
+
+> **Sample article.** Like the rest of the early content, this draft exists to
+> exercise the platform and will be rewritten by its author before review.
+
+These are lecture notes on the transformer, the architecture behind modern
+language models. They are written to be worked through, not skimmed: every
+matrix comes with its shape, and every equation is instantiated on one
+concrete model, the 348,096-parameter transformer you can run live at the end
+of the page. Nothing here is hypothetical. The shapes in the tables are the
+shapes of the model in the demo.
+
+## 1. The learning problem
+
+A language model assigns probability to text. Write a text as a sequence of
+tokens $x_1, x_2, \dots, x_T$ from a vocabulary of size $V$. The joint
+probability factorizes exactly, with no assumptions, by the chain rule:
+
+$$
+p(x_1, \dots, x_T) = \prod_{t=1}^{T} p(x_t \mid x_1, \dots, x_{t-1})
+$$
+
+So modeling text reduces to one repeated task: given the prefix, output a
+distribution over the next token. A transformer is a function
+$f_\theta$ that maps a prefix to a vector of $V$ scores (logits), which
+softmax turns into that distribution.
+
+Training minimizes the negative log likelihood of real text, which is the
+cross-entropy loss averaged over positions:
+
+$$
+\mathcal{L}(\theta) = -\frac{1}{T}\sum_{t=1}^{T} \log p_\theta\!\left(x_{t+1} \mid x_{\le t}\right)
+$$
+
+Two reference values calibrate everything that follows. A model that guesses
+uniformly over our vocabulary of $V = 65$ characters has loss
+$\ln 65 \approx 4.17$. The demo model ends training at $1.70$, which
+corresponds to a perplexity of $e^{1.70} \approx 5.5$: on average the model
+is as uncertain as if it were choosing between 5.5 equally likely
+characters, rather than 65.
+
+## 2. Notation and the running example
+
+The demo model is a character-level GPT trained on Shakespeare. All symbols
+below keep these values throughout the notes:
+
+| Symbol | Meaning                           | Demo value |
+| ------ | --------------------------------- | ---------- |
+| $V$    | vocabulary size (distinct chars)  | 65         |
+| $T$    | context length (block size)       | 64         |
+| $d$    | model width (embedding dimension) | 96         |
+| $h$    | number of attention heads         | 4          |
+| $d_k$  | width per head, $d / h$           | 24         |
+| $L$    | number of transformer blocks      | 3          |
+
+A prefix of $T$ tokens is processed as a matrix with one row per token.
+Everything in a transformer is matrix multiplication, so tracking shapes is
+half the understanding. The other half is knowing which multiplications mix
+information _across tokens_ (only attention does) and which act on each
+token independently (everything else).
+
+## 3. From characters to vectors
+
+Tokens are integers, so the first step is a lookup. The model owns two
+learned matrices: a token embedding $W_E \in \mathbb{R}^{V \times d}$ and a
+position embedding $W_P \in \mathbb{R}^{T \times d}$. For an input sequence
+$x_1, \dots, x_T$, the initial representation is
+
+$$
+X^{(0)}_t = W_E[x_t] + W_P[t], \qquad X^{(0)} \in \mathbb{R}^{T \times d}
+$$
+
+Row $t$ is the vector for token $t$: what the character is, plus where it
+sits. The position term is not optional. Attention, defined next, is a sum
+over rows and treats its input as a _set_. Permute the rows and the outputs
+permute identically, with nothing changed. Without $W_P$ the model literally
+could not distinguish "dog bites man" from "man bites dog".
+
+**Intuition.** An embedding is a learned coordinate system, not a code.
+Training is free to place characters anywhere in $\mathbb{R}^{96}$, and it
+tends to place characters that behave similarly near one another, because
+every matrix downstream treats nearby vectors similarly, so a good location
+is one that borrows the right neighbours' behavior. Nobody designs this
+geometry. It falls out of the loss.
+
+## 4. One head of attention
+
+The problem attention solves is long-range information flow. Consider the
+classic sentence:
+
+```text
+the animal didn't cross the street because it was too ___
+```
+
+To continue well, the representation of `it` must somehow contain `animal`,
+which sits seven tokens back. Attention is the mechanism that copies
+information between rows of $X$, with learned, input-dependent weights.
+
+<AnimatedFigure
+  src="/videos/concepts/transformers/attention-looks-back.mp4"
+  caption="Figure 1. To continue past 'it', attention scores every earlier token. The weights shown are illustrative, and 'animal' dominates the blend."
+/>
+
+### 4.1 Queries, keys, values
+
+A single head owns three learned projection matrices
+$W_Q, W_K, W_V \in \mathbb{R}^{d \times d_k}$ and computes three views of
+the same input:
+
+$$
+Q = X W_Q, \qquad K = X W_K, \qquad V = X W_V,
+\qquad Q, K, V \in \mathbb{R}^{T \times d_k}
+$$
+
+Row $i$ of $Q$ is what token $i$ is looking for. Row $j$ of $K$ is what
+token $j$ can be found under. Row $j$ of $V$ is what token $j$ hands over if
+selected. None of this is hard-coded: the three matrices are ordinary
+parameters shaped by gradient descent, and "query, key, value" is our name
+for the roles they end up playing.
+
+**Intuition.** Attention is a dictionary lookup made differentiable. A hash
+map takes a key and returns exactly one value, an all-or-nothing operation
+with no useful gradient. Attention asks with a query and gets _every_ value
+back at once, each weighted by how well its key matched. The operation is
+smooth end to end: nudge a projection matrix slightly and the blend shifts
+slightly. That smoothness is the entire reason gradient descent can learn
+_what to look for_, which no exact lookup structure would allow.
+
+### 4.2 Scores, scaling, and the causal mask
+
+Every query is compared with every key by dot product, all pairs at once:
+
+$$
+S = \frac{Q K^\top}{\sqrt{d_k}} \in \mathbb{R}^{T \times T}
+$$
+
+$S_{ij}$ is the raw affinity of token $i$ for token $j$. The scaling by
+$\sqrt{d_k}$ has a precise justification. If the components of $q$ and $k$
+are roughly independent with zero mean and unit variance, the dot product
+$q \cdot k$ has variance $d_k$, so its typical magnitude grows like
+$\sqrt{d_k}$. Dividing by $\sqrt{d_k}$ keeps scores at unit scale
+regardless of head width. Section 9.4 shows what goes wrong with gradients
+if you skip this.
+
+A language model must not see its own future. This is enforced by adding a
+mask $M \in \mathbb{R}^{T \times T}$ before the softmax, where
+$M_{ij} = 0$ if $j \le i$ and $M_{ij} = -\infty$ otherwise. For $T = 4$:
+
+$$
+M = \begin{bmatrix}
+0 & -\infty & -\infty & -\infty \\
+0 & 0 & -\infty & -\infty \\
+0 & 0 & 0 & -\infty \\
+0 & 0 & 0 & 0
+\end{bmatrix}
+$$
+
+An entry of $-\infty$ becomes $e^{-\infty} = 0$ after softmax: the future
+receives exactly zero weight. Masking, rather than truncating the input, is
+what lets training score all $T$ positions in one forward pass, which
+section 9.1 uses.
+
+### 4.3 Softmax and the weighted blend
+
+Softmax is applied to each row of the masked scores:
+
+$$
+A_{ij} = \frac{\exp\left(S_{ij} + M_{ij}\right)}{\sum_{j'=1}^{T} \exp\left(S_{ij'} + M_{ij'}\right)},
+\qquad A \in \mathbb{R}^{T \times T}
+$$
+
+Row $i$ of $A$ is a probability distribution over context positions: it is
+exactly the heatmap the demo widget draws. The head's output blends the
+value rows under those weights:
+
+$$
+\text{head}(X) = A V \in \mathbb{R}^{T \times d_k}
+$$
+
+### 4.4 A worked example
+
+Take $T = 3$, $d_k = 2$, and look only at the last position. Suppose its
+query and the three keys and values are
+
+$$
+q_3 = \begin{bmatrix} 1 \\ 1 \end{bmatrix}, \quad
+k_1 = \begin{bmatrix} 1 \\ 0 \end{bmatrix},
+k_2 = \begin{bmatrix} 2 \\ 1 \end{bmatrix},
+k_3 = \begin{bmatrix} 0 \\ 1 \end{bmatrix}, \quad
+v_1 = \begin{bmatrix} 1 \\ 0 \end{bmatrix},
+v_2 = \begin{bmatrix} 0 \\ 2 \end{bmatrix},
+v_3 = \begin{bmatrix} 1 \\ 1 \end{bmatrix}
+$$
+
+Scores for the last row of $S$, with $\sqrt{d_k} = \sqrt{2}$:
+
+$$
+s_{3j} = \frac{q_3 \cdot k_j}{\sqrt{2}}
+= \left(\frac{1}{\sqrt 2},\ \frac{3}{\sqrt 2},\ \frac{1}{\sqrt 2}\right)
+\approx (0.71,\ 2.12,\ 0.71)
+$$
+
+Softmax of $(0.71, 2.12, 0.71)$ gives weights
+$a_3 \approx (0.16,\ 0.67,\ 0.16)$, and the output is their blend of the
+values:
+
+$$
+\text{out}_3 = 0.16\, v_1 + 0.67\, v_2 + 0.16\, v_3
+\approx \begin{bmatrix} 0.33 \\ 1.51 \end{bmatrix}
+$$
+
+Token 2 matched the query best, so the new representation of token 3 is
+mostly token 2's value. That is the entire mechanism, animated below with
+different illustrative numbers.
+
+<AnimatedFigure
+  src="/videos/concepts/transformers/qkv-soft-lookup.mp4"
+  caption="Figure 2. One lookup, with illustrative numbers: the query of 'it' scores every key, softmax turns scores into weights, and the values blend by weight into the new representation of 'it'."
+/>
+
+## 5. Multi-head attention
+
+One attention pattern per layer is too restrictive: position $i$ might need
+syntax from nearby tokens and coreference from distant ones at the same
+time. So the layer runs $h$ heads in parallel, each with its own
+$W_Q^{(m)}, W_K^{(m)}, W_V^{(m)} \in \mathbb{R}^{d \times d_k}$, then
+concatenates and mixes with an output projection
+$W_O \in \mathbb{R}^{d \times d}$:
+
+$$
+\text{MHA}(X) = \left[\,\text{head}_1(X) \;\|\; \cdots \;\|\; \text{head}_h(X)\,\right] W_O
+\in \mathbb{R}^{T \times d}
+$$
+
+Since $h \cdot d_k = d$, the concatenation restores width $d$. In practice
+the three projections of all heads are fused into one matrix
+$W_{QKV} \in \mathbb{R}^{d \times 3d}$ and split afterwards, which is
+exactly how both the training code and the browser engine in this project
+implement it. Parameter count of one attention layer, including biases:
+$3d^2 + 3d$ for the fused projection plus $d^2 + d$ for $W_O$, which is
+$4d^2 + 4d = 37{,}248$ at $d = 96$.
+
+**Intuition.** Four heads are four specialists reading the same page at
+once: one might track who is speaking, another the previous vowel, another
+whether a quote is open. Each works in its own low-dimensional subspace and
+produces its own attention pattern. $W_O$ is the editor that merges four
+sets of notes into one report per token. When you switch layers in the
+widget's heatmap, you are averaging over these four specialists.
+
+## 6. The transformer block
+
+Attention is the only place tokens interact. The rest of a block processes
+each row independently, and two auxiliary pieces make the whole thing
+trainable at depth.
+
+**LayerNorm.** Each row $x \in \mathbb{R}^d$ is standardized and then
+rescaled by learned gain $\gamma$ and bias $\beta$:
+
+$$
+\mu = \frac{1}{d}\sum_{j=1}^{d} x_j, \qquad
+\sigma^2 = \frac{1}{d}\sum_{j=1}^{d} (x_j - \mu)^2, \qquad
+\text{LN}(x) = \gamma \odot \frac{x - \mu}{\sqrt{\sigma^2 + \varepsilon}} + \beta
+$$
+
+with $\varepsilon = 10^{-5}$ for numerical safety. Its job is to keep
+activations at a stable scale no matter how deep the stack gets.
+
+**MLP.** A two-layer network applied to each row, with
+$W_1 \in \mathbb{R}^{d \times 4d}$ and $W_2 \in \mathbb{R}^{4d \times d}$:
+
+$$
+\text{MLP}(x) = \text{GELU}(x W_1 + b_1)\, W_2 + b_2
+$$
+
+The nonlinearity is GELU, $\text{GELU}(x) = x\,\Phi(x)$ where $\Phi$ is the
+standard normal CDF, computed in practice with the tanh approximation
+
+$$
+\text{GELU}(x) \approx \tfrac{1}{2} x \left(1 + \tanh\!\left[\sqrt{2/\pi}\,(x + 0.044715\,x^3)\right]\right)
+$$
+
+A useful reading: attention _gathers_ information from other tokens, the
+MLP _processes_ what was gathered, token by token. The MLP holds most of
+the parameters, $8d^2 + 5d = 74{,}208$ per block at $d = 96$.
+
+**Residual connections.** The block does not replace its input, it adds to
+it. Using pre-norm (normalize before each sublayer, the GPT-2 convention,
+and what this project's code does):
+
+$$
+\begin{aligned}
+X' &= X + \text{MHA}\!\left(\text{LN}_1(X)\right) \\
+X'' &= X' + \text{MLP}\!\left(\text{LN}_2(X')\right)
+\end{aligned}
+$$
+
+The identity path means a block can learn to contribute nothing (output
+near zero) without destroying information, and it gives gradients a clean
+route down the stack, made precise in section 9.3.
+
+**Intuition.** Read the block equations as _edit, do not rewrite_. The
+stream $X$ carries each token's running state. Attention writes in
+information fetched from other tokens, the MLP writes in conclusions
+computed from what was fetched, and LayerNorm keeps every token's signal at
+a workable volume before each edit. Forty-eight blocks later the stream has
+been annotated many times and erased zero times. This "residual stream"
+reading is also how interpretability researchers actually talk about
+transformer internals.
+
+## 7. The full model, shape by shape
+
+Stack $L$ blocks, apply one final LayerNorm, then map back to vocabulary
+scores. The demo model ties the output matrix to the input embedding, so
+the unembedding is just $W_E^\top$:
+
+$$
+Z = \text{LN}_f\!\left(X^{(L)}\right) W_E^\top \in \mathbb{R}^{T \times V}
+$$
+
+Row $t$ of $Z$ scores every candidate for position $t+1$: the logit for
+token $v$ is the dot product between the final representation of position
+$t$ and token $v$'s embedding.
+
+**Intuition.** Tying makes prediction a nearest-neighbour search in the
+embedding space of section 3. After the blocks have done their editing, the
+final vector for a position is a point in the same space where characters
+live, and the logit for each character measures how strongly the vector
+points at it. The model answers "what comes next" by answering "which
+character does this context now resemble".
+
+![Architecture of the demo transformer, drawn end to end with every matrix shape labeled](/images/concepts/transformers/architecture.svg)
+
+_Figure 3. The demo model end to end. Every arrow carries a shape you can
+check against the parameter table below, and the ×3 bracket is the entire
+depth of the network._
+
+The complete forward pass, with shapes at $T = 64$:
+
+| Step                    | Computation                               | Shape       |
+| ----------------------- | ----------------------------------------- | ----------- |
+| token ids               | input                                     | (64,)       |
+| embeddings              | $W_E[x] + W_P$                            | (64, 96)    |
+| fused QKV, per block    | $X W_{QKV}$                               | (64, 288)   |
+| attention $A$, per head | masked row softmax of $QK^\top/\sqrt{24}$ | (64, 64) ×4 |
+| head outputs, merged    | $[\dots] W_O$, add residual               | (64, 96)    |
+| MLP hidden, per block   | GELU$(X W_1 + b_1)$                       | (64, 384)   |
+| MLP out                 | $\cdot\, W_2 + b_2$, add residual         | (64, 96)    |
+| final norm              | $\text{LN}_f$                             | (64, 96)    |
+| logits                  | $\cdot\, W_E^\top$                        | (64, 65)    |
+
+And the complete parameter accounting. This table sums to exactly the
+number of parameters in the model you are about to run:
+
+| Tensor                           | Shape          | Parameters  |
+| -------------------------------- | -------------- | ----------- |
+| token embedding $W_E$            | 65 × 96        | 6,240       |
+| position embedding $W_P$         | 64 × 96        | 6,144       |
+| per block: LN₁ ($\gamma, \beta$) | 2 × 96         | 192         |
+| per block: $W_{QKV}$, bias       | 96 × 288 + 288 | 27,936      |
+| per block: $W_O$, bias           | 96 × 96 + 96   | 9,312       |
+| per block: LN₂                   | 2 × 96         | 192         |
+| per block: $W_1$, bias           | 96 × 384 + 384 | 37,248      |
+| per block: $W_2$, bias           | 384 × 96 + 96  | 36,960      |
+| all 3 blocks                     |                | 335,520     |
+| final LN                         | 2 × 96         | 192         |
+| unembedding                      | tied to $W_E$  | 0           |
+| **total**                        |                | **348,096** |
+
+<AnimatedFigure
+  src="/videos/concepts/transformers/stacked-blocks.mp4"
+  caption="Figure 4. The same journey, animated: tokens become embeddings, pass through the stack, and come out as a probability distribution over the next token."
+/>
+
+## 8. The forward pass in code
+
+Everything above, in numpy, close to a line-for-line mirror of the
+TypeScript engine that runs in your browser on this page. `params` is a
+dict of the tensors from the table in section 7.
+
+```python
+import numpy as np
+
+def layer_norm(x, g, b, eps=1e-5):
+    mu = x.mean(axis=-1, keepdims=True)
+    var = x.var(axis=-1, keepdims=True)
+    return g * (x - mu) / np.sqrt(var + eps) + b
+
+def gelu(x):
+    return 0.5 * x * (1 + np.tanh(np.sqrt(2 / np.pi) * (x + 0.044715 * x**3)))
+
+def causal_attention(x, w_qkv, b_qkv, w_o, b_o, n_head):
+    T, d = x.shape
+    dk = d // n_head
+    q, k, v = np.split(x @ w_qkv + b_qkv, 3, axis=1)   # each (T, d)
+    out = np.zeros((T, d))
+    for m in range(n_head):                            # one head at a time
+        qm = q[:, m*dk:(m+1)*dk]                       # (T, dk)
+        km = k[:, m*dk:(m+1)*dk]
+        vm = v[:, m*dk:(m+1)*dk]
+        scores = qm @ km.T / np.sqrt(dk)               # (T, T)
+        mask = np.triu(np.ones((T, T), dtype=bool), 1)
+        scores[mask] = -np.inf                         # hide the future
+        a = np.exp(scores - scores.max(axis=1, keepdims=True))
+        a = a / a.sum(axis=1, keepdims=True)           # rows of A sum to 1
+        out[:, m*dk:(m+1)*dk] = a @ vm
+    return out @ w_o + b_o
+
+def forward(ids, p, n_layer=3, n_head=4):
+    x = p["tok_emb"][ids] + p["pos_emb"][: len(ids)]   # (T, d)
+    for i in range(n_layer):
+        blk = p["blocks"][i]
+        x = x + causal_attention(layer_norm(x, blk["g1"], blk["b1"]),
+                                 blk["w_qkv"], blk["b_qkv"],
+                                 blk["w_o"], blk["b_o"], n_head)
+        h = gelu(layer_norm(x, blk["g2"], blk["b2"]) @ blk["w1"] + blk["bw1"])
+        x = x + h @ blk["w2"] + blk["bw2"]
+    x = layer_norm(x, p["g_f"], p["b_f"])
+    return x @ p["tok_emb"].T                          # logits, (T, V)
+```
+
+## 9. Training: the loss and its gradients
+
+### 9.1 All positions at once
+
+Because the causal mask already hides the future, a single forward pass on a
+length-$T$ training sequence produces valid next-token logits at _every_
+position. The loss is averaged over all of them:
+
+$$
+\mathcal{L} = -\frac{1}{T}\sum_{t=1}^{T} \log\, \text{softmax}\!\left(Z_t\right)_{x_{t+1}}
+$$
+
+One sequence gives $T$ supervised examples for the price of one forward
+pass. This, not anything about attention itself, is why transformers train
+so much faster than recurrent models, which must process tokens serially.
+
+### 9.2 The cleanest gradient in deep learning
+
+Let $z \in \mathbb{R}^V$ be the logits at one position and $y$ the correct
+next token. The loss there is
+$\ell = -z_y + \log \sum_j e^{z_j}$, so
+
+$$
+\frac{\partial \ell}{\partial z_i}
+= \frac{e^{z_i}}{\sum_j e^{z_j}} - \mathbf{1}[i = y]
+= p_i - \mathbf{1}[i = y]
+$$
+
+The gradient at the output is simply _predicted probabilities minus the
+one-hot truth_. If the model puts probability 0.9 on the right character,
+the gradient is small everywhere. If it puts 0.9 on the wrong one, that
+logit gets pushed down with force 0.9 while the correct one is pulled up.
+In code: `grad_logits = probs; grad_logits[y] -= 1.0`.
+
+### 9.3 Backprop through the stack
+
+From the output gradient, every parameter's gradient follows from two
+mechanical rules applied down the computation graph.
+
+**Matrix multiply.** If $Y = XW$ and the incoming gradient is
+$G = \partial \mathcal{L} / \partial Y$, then
+
+$$
+\frac{\partial \mathcal{L}}{\partial X} = G W^\top,
+\qquad
+\frac{\partial \mathcal{L}}{\partial W} = X^\top G
+$$
+
+Every weight gradient in the network is "input transposed, times incoming
+gradient". This is the workhorse: embeddings, projections, MLP, and
+unembedding are all this one rule.
+
+**Residual connections.** If $X_{\text{out}} = X + F(X)$, then
+
+$$
+\frac{\partial \mathcal{L}}{\partial X}
+= G + \frac{\partial F}{\partial X}^\top G
+$$
+
+The bare $G$ term is the point: the gradient reaches lower blocks _intact_
+through the identity path, no matter what the sublayers do. Without
+residuals, the gradient at depth $L$ is a product of $L$ Jacobians and
+shrinks or explodes geometrically. With them, the identity terms make the
+deep stack trainable. This is the single most important reason a 48-block
+GPT-2 can be trained at all.
+
+**Intuition.** Backprop is blame assignment, and the residual stream is a
+highway for blame. Every block taps the highway to learn what it should
+have done differently, but no block can blockade it. A useless block gets
+routed around in the forward pass and skipped over by gradients in the
+backward pass, so depth costs compute, never trainability.
+
+<AnimatedFigure
+  src="/videos/concepts/transformers/gradient-highway.mp4"
+  caption="Figure 5. Backprop through the stack: the gradient rides the residual stream down at full strength, and each block takes a dimmer branch copy to update its own weights."
+/>
+
+### 9.4 Why the scaling constant protects gradients
+
+Softmax's Jacobian is
+$\partial A_{i}/\partial S_{i} = \text{diag}(a_i) - a_i a_i^\top$ for each
+row. If scores are large, the row $a_i$ saturates to one-hot, and this
+Jacobian goes to zero: attention stops learning. Unscaled dot products have
+standard deviation $\sqrt{d_k}$, which at $d_k = 24$ is already enough to
+push softmax toward saturation at initialization. Dividing by $\sqrt{d_k}$
+keeps scores near unit scale, softmax stays soft, and gradients flow. A
+small constant in the equation, but it exists for the gradients, not the
+forward pass.
+
+### 9.5 The update rule
+
+The demo model was trained with AdamW, which keeps running averages of each
+parameter's gradient $g_t$ and squared gradient, then takes a
+per-coordinate normalized step with decoupled weight decay $\lambda$:
+
+$$
+\begin{aligned}
+m_t &= \beta_1 m_{t-1} + (1 - \beta_1)\, g_t,
+\qquad
+v_t = \beta_2 v_{t-1} + (1 - \beta_2)\, g_t^2 \\
+\hat m_t &= \frac{m_t}{1 - \beta_1^t},
+\qquad
+\hat v_t = \frac{v_t}{1 - \beta_2^t},
+\qquad
+\theta_t = \theta_{t-1} - \eta \left( \frac{\hat m_t}{\sqrt{\hat v_t} + \varepsilon} + \lambda\, \theta_{t-1} \right)
+\end{aligned}
+$$
+
+with the standard $\beta_1 = 0.9$, $\beta_2 = 0.999$. Decay applies only to
+matrices, not to LayerNorm gains or biases.
+
+### 9.6 The actual training run
+
+The demo model: batches of 64 sequences of length 64, learning rate warmed
+up then cosine-decayed from $3 \times 10^{-3}$ to $3 \times 10^{-4}$, 4,000
+steps, about 18 minutes on a laptop CPU. Validation loss over the run:
+
+| Step  | Validation loss |
+| ----- | --------------- |
+| 0     | 64.1            |
+| 500   | 2.28            |
+| 1,000 | 2.06            |
+| 2,000 | 1.85            |
+| 3,000 | 1.75            |
+| 4,000 | 1.70            |
+
+Two readings. The starting loss is far above the uniform-guessing baseline
+of 4.17 because the randomly initialized tied head produces large,
+confidently wrong logits, and the first few hundred steps mostly fix that
+miscalibration. And the final 1.70 means $e^{1.70} \approx 5.5$ effective
+choices per character: the model has learned spelling and word shapes, and
+is nowhere near memorizing the text.
+
+## 10. Sampling and temperature
+
+The model outputs logits, not text. Sampling with temperature $\tau$
+rescales before the softmax:
+
+$$
+p_i = \frac{\exp(z_i / \tau)}{\sum_j \exp(z_j / \tau)}
+$$
+
+As $\tau \to 0$ this approaches the argmax (deterministic, repetitive), and
+as $\tau \to \infty$ it approaches uniform noise. $\tau = 1$ recovers the
+model's honest distribution. The temperature slider below is exactly this
+equation and nothing more.
+
+**Intuition.** Temperature is a risk dial, not a knowledge dial. It changes
+how the model bets, never what it believes: the logits, and everything the
+model knows, are identical at every setting. This is also why cranking
+temperature cannot make a model smarter, only stranger.
+
+Everything so far, played end to end. The numbers in this animation are the
+demo model's real outputs for the prompt "ROMEO: ", extracted by running
+the exported weights: the attention pattern in the close-up, the top-5
+probabilities, and the loss are all measured, not invented.
+
+<AnimatedFigure
+  src="/videos/concepts/transformers/full-pass.mp4"
+  caption="Figure 6. One full pass and one training step, with the model's real numbers: 'ROMEO: ' is read and embedded, block 2's attention concentrates on the colon and the space, the top-5 bets unfold, sampling appends 'I', then training reveals the truth 'w' and the gradient retraces the stack to nudge every weight."
+/>
+
+## 11. Run it
+
+The widget below is the running example made real: the same $W_E$, the same
+three blocks, the same masked softmax, executing in your browser. The
+probability bars are the last row of $\text{softmax}(Z / \tau)$, and the
+heatmap is the last row of a layer's attention matrix $A$, averaged over
+its 4 heads.
+
+<TransformerPredictor />
+
+Worth trying, with the math in mind:
+
+- Type `"q"` mid-word and watch `"u"` dominate. That is a learned key-query
+  alignment from section 4, discovered by gradient descent because it
+  reduces the loss in section 9.
+- Slide temperature to 0.2 and then 1.8 while keeping the text fixed. The
+  logits $z$ never change, only $\tau$ in the equation of section 10.
+- Switch heatmap layers. Layer 1 usually attends locally, layer 3 more
+  diffusely, consistent with lower blocks building local structure.
+- Let it write at length. It produces Shakespeare-shaped pseudo-words
+  because 348k parameters at loss 1.70 buys spelling statistics, not
+  meaning. Scale the same equations to billions of parameters and trillions
+  of tokens and you get a modern assistant. The architecture in these notes
+  is essentially unchanged in production systems today.
+
+## 12. Cost and limits
+
+- **Attention is quadratic.** The matrix $A$ is $T \times T$ per head, so
+  compute and memory grow as $O(T^2 d)$ per layer, against $O(T d^2)$ for
+  the MLP. At $T = 64$ this is trivial. At $T = 10^5$, attention dominates
+  everything, which is why long-context inference is expensive and why the
+  model simply cannot see beyond its window.
+- **Prediction is not truth.** The loss in section 1 rewards plausible
+  continuations of the training distribution. A fluent, confident, wrong
+  statement can be an excellent minimizer of that loss. Hallucination is
+  the objective working as specified, not a bug in the architecture.
+- **Attention is not explanation.** $A$ shows where information flowed, not
+  why a decision was made. Treat heatmaps as evidence, never proof.
+
+> **Misconception.** "The model looks up answers it memorized." The forward
+> pass contains no database and no retrieval, only the matrices of section 7. Everything the model "knows" is compressed into 348k (or a few
+> billion) learned weights, and text is reconstructed from that compression,
+> which is exactly why it can be fluently wrong.
+
+## 13. Where to go next
+
+Natural continuations of these notes: tokenization (real models use subword
+tokens, not characters), embeddings as a topic of their own, the training
+loop at scale (mixed precision, batching, distributed optimization), what
+instruction tuning and RLHF add after pretraining, and KV caching, which
+makes generation $O(T)$ per token instead of $O(T^2)$. On this site, those
+nodes will connect here as the graph grows.
+
+## References
+
+- Vaswani et al.,
+  [_Attention Is All You Need_](https://arxiv.org/abs/1706.03762) (2017).
+  The original paper, more readable than its reputation suggests.
+- Rumelhart, Hinton, Williams,
+  [_Learning representations by back-propagating errors_](https://www.nature.com/articles/323533a0)
+  (1986). The backprop rules of section 9.3.
+- Ba, Kiros, Hinton,
+  [_Layer Normalization_](https://arxiv.org/abs/1607.06450) (2016).
+- Hendrycks and Gimpel,
+  [_Gaussian Error Linear Units_](https://arxiv.org/abs/1606.08415) (2016).
+  GELU.
+- Loshchilov and Hutter,
+  [_Decoupled Weight Decay Regularization_](https://arxiv.org/abs/1711.05101)
+  (2019). AdamW as in section 9.5.
+- Radford et al.,
+  [_Language Models are Unsupervised Multitask Learners_](https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf)
+  (2019). GPT-2, the pre-norm convention used here.
+- Karpathy, [_nanoGPT_](https://github.com/karpathy/nanoGPT) and the
+  [_Let's build GPT_ lecture](https://www.youtube.com/watch?v=kCc8FmEb1nY).
+  The demo model is a close cousin of his minimal implementation.
+- Alammar,
+  [_The Illustrated Transformer_](https://jalammar.github.io/illustrated-transformer/).
+  The classic visual companion.

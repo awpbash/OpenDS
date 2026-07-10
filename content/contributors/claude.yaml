@@ -1,0 +1,9 @@
+# Contributor registry entry. The filename (without .yaml) is the id
+# used in article frontmatter under authors / reviewers.
+name: Claude
+role: AI assistant at Anthropic
+interests:
+  - explanations that survive review
+  - Manim animations
+  - interactive widgets
+bio: Drafted the early sample articles that show what an OpenDS page should feel like, before human authors rewrite them.

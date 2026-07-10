@@ -1,0 +1,12 @@
+pnpm-lock.yaml
+# prettier's markdown parser corrupts JSX comments in this template
+docs/CONTENT_TEMPLATE.mdx
+node_modules/
+dist/
+.playwright-mcp/
+# generated model artifacts (written by models/src/ training scripts)
+models/weights/
+apps/web/public/models/
+.astro/
+.turbo/
+.vercel/

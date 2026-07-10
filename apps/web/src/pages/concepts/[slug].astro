@@ -1,0 +1,354 @@
+---
+import { getCollection, render } from "astro:content";
+import "katex/dist/katex.min.css";
+import { buildGraph, findNode, unlocks as graphUnlocks } from "@opends/graph";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ObservationsExplorer from "../../components/mdx/ObservationsExplorer.astro";
+import TransformerPredictor from "../../components/mdx/TransformerPredictor.astro";
+import AnimatedFigure from "../../components/mdx/AnimatedFigure.astro";
+import { readingMinutes, STATUS_LABELS } from "../../lib/content";
+
+export async function getStaticPaths() {
+  const concepts = await getCollection("concepts");
+  return concepts.map((entry) => ({
+    params: { slug: entry.data.slug },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content, headings } = await render(entry);
+
+// Section links for the "On this page" navigation. Depth 2 and 3 only:
+// deeper levels are noise in a table of contents.
+const toc = headings.filter(
+  (heading) => heading.depth === 2 || heading.depth === 3,
+);
+
+// Widgets and media components authors can use in MDX without imports.
+const mdxComponents = {
+  ObservationsExplorer,
+  TransformerPredictor,
+  AnimatedFigure,
+};
+
+const [allConcepts, contributors] = await Promise.all([
+  getCollection("concepts"),
+  getCollection("contributors"),
+]);
+
+const contributorName = (id: string) =>
+  contributors.find((contributor) => contributor.id === id)?.data.name ?? id;
+
+// The merged graph: published concepts plus the planned skeleton. Reverse
+// links are generated, never authored, and prerequisites that are not
+// written yet still show up, marked as planned.
+const graph = buildGraph(
+  allConcepts.map((concept) => ({
+    slug: concept.data.slug,
+    title: concept.data.title,
+    family: concept.data.family,
+    status: concept.data.status,
+    prerequisites: concept.data.prerequisites,
+    partOf: concept.data.partOf,
+  })),
+);
+
+const nodeFor = (slug: string) => findNode(graph, slug);
+
+const unlocks = graphUnlocks(graph, entry.data.slug);
+
+const minutes = readingMinutes(entry.body);
+
+const statusLabel = STATUS_LABELS[entry.data.status];
+
+const authors = entry.data.authors.map(contributorName);
+const reviewers = entry.data.reviewers.map(contributorName);
+
+const connectionGroups = [
+  { label: "Builds on", slugs: entry.data.prerequisites },
+  { label: "Part of", slugs: entry.data.partOf },
+].filter((group) => group.slugs.length > 0);
+
+const hasRailContext = connectionGroups.length > 0 || unlocks.length > 0;
+---
+
+<BaseLayout
+  title={`${entry.data.title} | OpenDS`}
+  description={entry.data.description}
+>
+  <main class="gutter container-wide pt-8 pb-14">
+    <div
+      class="mx-auto max-w-[46rem] xl:mx-0 xl:grid xl:max-w-none xl:grid-cols-[minmax(0,46rem)_minmax(0,1fr)] xl:gap-x-20"
+    >
+      <div class="min-w-0">
+        <header>
+          <p
+            class="font-sans text-[0.8125rem] tracking-wide text-ink-muted uppercase"
+          >
+            {statusLabel} · {entry.data.difficulty} · {minutes} min read
+          </p>
+          <h1
+            class="mt-3 font-sans text-[clamp(1.9rem,5vw,2.6rem)] leading-[1.15] font-semibold tracking-tight"
+          >
+            {entry.data.title}
+          </h1>
+          <p
+            class="mt-4 font-serif text-lg leading-relaxed text-ink-muted italic sm:text-xl"
+          >
+            {entry.data.description}
+          </p>
+          <p class="mt-4 font-sans text-sm text-ink-muted">
+            By {authors.join(", ")}
+            {
+              reviewers.length > 0 ? (
+                <span> · Reviewed by {reviewers.join(", ")}</span>
+              ) : (
+                <span> · Not yet peer-reviewed</span>
+              )
+            }
+          </p>
+
+          {
+            connectionGroups.length > 0 && (
+              <div class="mt-5 flex flex-wrap items-baseline gap-x-4 gap-y-2 font-sans text-sm xl:hidden">
+                {connectionGroups.map((group) => (
+                  <span class="flex flex-wrap items-baseline gap-x-2 gap-y-2">
+                    <span class="text-ink-faint">{group.label}</span>
+                    {group.slugs.map((slug) => {
+                      const node = nodeFor(slug);
+                      return node?.status === "planned" ? (
+                        <span class="rounded-full border border-dashed border-hairline px-3 py-0.5 text-ink-faint">
+                          {node.title} · soon
+                        </span>
+                      ) : (
+                        <a
+                          href={`/concepts/${slug}`}
+                          class="rounded-full border border-hairline px-3 py-0.5 text-ink-muted hover:border-accent hover:text-accent"
+                        >
+                          {node?.title ?? slug}
+                        </a>
+                      );
+                    })}
+                  </span>
+                ))}
+              </div>
+            )
+          }
+
+          {
+            toc.length > 2 && (
+              <details class="mt-6 rounded border border-hairline font-sans text-sm xl:hidden">
+                <summary class="cursor-pointer px-4 py-2.5 font-medium text-ink-muted select-none">
+                  On this page
+                </summary>
+                <ol class="space-y-1.5 border-t border-hairline px-4 py-3">
+                  {toc.map((heading) => (
+                    <li class={heading.depth === 3 ? "pl-4" : ""}>
+                      <a
+                        href={`#${heading.slug}`}
+                        class="text-ink-muted hover:text-accent"
+                      >
+                        {heading.text}
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              </details>
+            )
+          }
+
+          <hr class="mt-8 border-hairline" />
+        </header>
+
+        <article class="prose mt-8">
+          <Content components={mdxComponents} />
+        </article>
+
+        {
+          unlocks.length > 0 && (
+            <section
+              aria-label="What this concept unlocks"
+              class="mt-12 border-t border-hairline pt-6 xl:hidden"
+            >
+              <h2 class="font-sans text-sm font-semibold tracking-wide text-ink-muted uppercase">
+                Unlocks
+              </h2>
+              <ul class="mt-3 space-y-2">
+                {unlocks.map((next) => (
+                  <li>
+                    {next.status === "planned" ? (
+                      <span class="font-sans text-ink-faint">
+                        {next.title} · soon
+                      </span>
+                    ) : (
+                      <a
+                        href={`/concepts/${next.slug}`}
+                        class="font-sans text-accent hover:underline"
+                      >
+                        {next.title}
+                      </a>
+                    )}
+                    {next.description && (
+                      <p class="font-sans text-sm text-ink-muted">
+                        {next.description}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
+
+        <section
+          aria-label="Credits"
+          class="mt-12 border-t border-hairline pt-6 font-sans text-sm xl:hidden"
+        >
+          <dl class="space-y-1.5 text-ink-muted">
+            <div class="flex gap-2">
+              <dt class="w-24 shrink-0 text-ink-faint">Written by</dt>
+              <dd>{authors.join(", ")}</dd>
+            </div>
+            <div class="flex gap-2">
+              <dt class="w-24 shrink-0 text-ink-faint">Reviewed by</dt>
+              <dd>
+                {
+                  reviewers.length > 0
+                    ? reviewers.join(", ")
+                    : "Awaiting peer review"
+                }
+              </dd>
+            </div>
+            <div class="flex gap-2">
+              <dt class="w-24 shrink-0 text-ink-faint">Status</dt>
+              <dd>{statusLabel}</dd>
+            </div>
+          </dl>
+        </section>
+      </div>
+
+      <aside class="hidden xl:block" aria-label="Concept context">
+        <div
+          class="rail-scroll sticky top-16 max-h-[calc(100vh-5rem)] space-y-8 overflow-y-auto border-l border-hairline pl-8 font-sans text-sm"
+        >
+          {
+            toc.length > 2 && (
+              <nav aria-label="On this page">
+                <h2 class="text-[0.8125rem] font-semibold tracking-wide text-ink-faint uppercase">
+                  On this page
+                </h2>
+                <ol class="mt-2 space-y-1.5 pr-2">
+                  {toc.map((heading) => (
+                    <li class={heading.depth === 3 ? "pl-4" : ""}>
+                      <a
+                        href={`#${heading.slug}`}
+                        class="text-ink-muted hover:text-accent"
+                      >
+                        {heading.text}
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              </nav>
+            )
+          }
+
+          {
+            connectionGroups.map((group) => (
+              <div>
+                <h2 class="text-[0.8125rem] font-semibold tracking-wide text-ink-faint uppercase">
+                  {group.label}
+                </h2>
+                <ul class="mt-2 space-y-1.5">
+                  {group.slugs.map((slug) => {
+                    const node = nodeFor(slug);
+                    return (
+                      <li>
+                        {node?.status === "planned" ? (
+                          <span class="text-ink-faint">
+                            {node.title} · soon
+                          </span>
+                        ) : (
+                          <a
+                            href={`/concepts/${slug}`}
+                            class="text-ink-muted hover:text-accent"
+                          >
+                            {node?.title ?? slug}
+                          </a>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))
+          }
+
+          {
+            unlocks.length > 0 && (
+              <div>
+                <h2 class="text-[0.8125rem] font-semibold tracking-wide text-ink-faint uppercase">
+                  Unlocks
+                </h2>
+                <ul class="mt-2 space-y-1.5">
+                  {unlocks.map((next) => (
+                    <li>
+                      {next.status === "planned" ? (
+                        <span class="text-ink-faint">{next.title} · soon</span>
+                      ) : (
+                        <a
+                          href={`/concepts/${next.slug}`}
+                          class="text-ink-muted hover:text-accent"
+                        >
+                          {next.title}
+                        </a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          }
+
+          {
+            !hasRailContext && (
+              <p class="text-ink-faint">
+                This concept has no declared connections yet. They appear here
+                as the graph grows.
+              </p>
+            )
+          }
+
+          <div>
+            <h2
+              class="text-[0.8125rem] font-semibold tracking-wide text-ink-faint uppercase"
+            >
+              Credits
+            </h2>
+            <dl class="mt-3 space-y-3 text-ink-muted">
+              <div>
+                <dt class="text-[0.8125rem] text-ink-faint">Written by</dt>
+                <dd class="mt-0.5">{authors.join(", ")}</dd>
+              </div>
+              <div>
+                <dt class="text-[0.8125rem] text-ink-faint">Reviewed by</dt>
+                <dd class="mt-0.5">
+                  {
+                    reviewers.length > 0
+                      ? reviewers.join(", ")
+                      : "Awaiting peer review"
+                  }
+                </dd>
+              </div>
+              <div>
+                <dt class="text-[0.8125rem] text-ink-faint">Status</dt>
+                <dd class="mt-0.5">{statusLabel}</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+</BaseLayout>

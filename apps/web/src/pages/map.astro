@@ -1,0 +1,137 @@
+---
+import { getCollection } from "astro:content";
+import { FAMILIES, FAMILY_LABELS } from "@opends/content-schema";
+import { buildGraph } from "@opends/graph";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import KnowledgeGraph from "../components/graph/KnowledgeGraph.tsx";
+
+const concepts = await getCollection("concepts");
+
+const graph = buildGraph(
+  concepts.map((entry) => ({
+    slug: entry.data.slug,
+    title: entry.data.title,
+    family: entry.data.family,
+    status: entry.data.status,
+    prerequisites: entry.data.prerequisites,
+    partOf: entry.data.partOf,
+  })),
+);
+
+const graphNodes = graph.nodes.map(({ slug, title, family, status }) => ({
+  slug,
+  title,
+  family,
+  status,
+}));
+
+// The same graph as a list, grouped by family: the fallback that works
+// everywhere, with or without a pointer.
+const families = FAMILIES.map((family) => ({
+  family,
+  label: FAMILY_LABELS[family],
+  nodes: graph.nodes
+    .filter((node) => node.family === family)
+    .sort((a, b) => {
+      const aPlanned = a.status === "planned" ? 1 : 0;
+      const bPlanned = b.status === "planned" ? 1 : 0;
+      return aPlanned - bPlanned || a.title.localeCompare(b.title);
+    }),
+})).filter((group) => group.nodes.length > 0);
+---
+
+<BaseLayout
+  title="The map | OpenDS"
+  description="The OpenDS knowledge graph: every concept, what it builds on, and what it unlocks, laid out as a living map."
+>
+  <main class="gutter container-wide grow pt-10 pb-14">
+    <div class="mx-auto max-w-[46rem] text-center">
+      <h1 class="font-sans text-3xl font-semibold tracking-tight">The map</h1>
+      <p class="mt-3 font-serif text-lg leading-relaxed text-ink-muted">
+        This is Data Science as a territory rather than a syllabus. Every
+        concept declares what it builds on, the map is drawn from those
+        declarations alone, and the lines show what to learn before what. Pick
+        any node that interests you and follow the edges backward until you
+        reach ground you already know. That is your starting point.
+      </p>
+    </div>
+
+    <div class="mt-8 rounded border border-hairline p-3 sm:p-4">
+      <KnowledgeGraph
+        client:load
+        nodes={graphNodes}
+        edges={graph.edges.map(({ source, target }) => ({ source, target }))}
+        variant="full"
+        familyLabels={FAMILY_LABELS}
+      />
+    </div>
+
+    <ul
+      class="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2 font-sans text-[0.8125rem] text-ink-muted"
+      aria-label="Families"
+    >
+      {
+        families.map((group) => (
+          <li class="flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              class="h-2.5 w-2.5 rounded-full"
+              style={`background-color: var(--family-${group.family})`}
+            />
+            {group.label}
+          </li>
+        ))
+      }
+      <li class="text-ink-faint">
+        Solid dots are published, hollow ones are still waiting for an author
+      </li>
+    </ul>
+
+    <section aria-labelledby="browse-list" class="mt-14">
+      <h2
+        id="browse-list"
+        class="font-sans text-sm font-semibold tracking-wide text-ink-muted uppercase"
+      >
+        Browse as a list
+      </h2>
+      <div class="mt-6 grid gap-x-12 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+        {
+          families.map((group) => (
+            <div>
+              <h3 class="flex items-center gap-2 font-sans text-sm font-semibold tracking-tight">
+                <span
+                  aria-hidden="true"
+                  class="h-2 w-2 rounded-full"
+                  style={`background-color: var(--family-${group.family})`}
+                />
+                {group.label}
+              </h3>
+              <ul class="mt-2.5 space-y-1.5 font-sans text-sm">
+                {group.nodes.map((node) =>
+                  node.status === "planned" ? (
+                    <li class="text-ink-faint">{node.title}</li>
+                  ) : (
+                    <li>
+                      <a
+                        href={`/concepts/${node.slug}`}
+                        class="text-ink-muted hover:text-accent"
+                      >
+                        {node.title}
+                      </a>
+                    </li>
+                  ),
+                )}
+              </ul>
+            </div>
+          ))
+        }
+      </div>
+      <p class="mt-8 text-center font-sans text-sm text-ink-muted">
+        A planned node is an open invitation.{" "}
+        <a href="/about#join-in" class="text-accent hover:underline">
+          Here is how to claim one.
+        </a>
+      </p>
+    </section>
+  </main>
+</BaseLayout>

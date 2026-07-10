@@ -1,0 +1,63 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { STATUS_LABELS } from "../../lib/content";
+
+const projects = (await getCollection("projects")).sort((a, b) =>
+  a.data.title.localeCompare(b.data.title),
+);
+---
+
+<BaseLayout
+  title="Projects | OpenDS"
+  description="Real systems and experiments, documented honestly: architecture, trade-offs, evaluation, and what went wrong."
+>
+  <main class="gutter container-reading pt-10 pb-14">
+    <h1 class="font-sans text-3xl font-semibold tracking-tight">Projects</h1>
+    <p class="mt-3 font-serif text-lg leading-relaxed text-ink-muted">
+      Real systems built by the community, written up the way you wish every
+      project were: the problem, the architecture, the alternatives that were
+      considered, the trade-offs, and the failures. Each one links back to the
+      concepts it exercises.
+    </p>
+
+    {
+      projects.length === 0 ? (
+        <div class="mt-10 border-t border-b border-hairline py-10">
+          <p class="font-sans text-sm font-semibold tracking-wide text-ink-muted uppercase">
+            Nothing here yet
+          </p>
+          <p class="mt-3 font-serif leading-relaxed text-ink-muted">
+            Project writeups arrive as batch members ship things worth
+            dissecting. Even this site's own tiny in-browser transformer, live
+            on the{" "}
+            <a
+              href="/concepts/transformers"
+              class="text-accent hover:underline"
+            >
+              Transformers
+            </a>{" "}
+            page, is a candidate for the first one.
+          </p>
+        </div>
+      ) : (
+        <ul class="mt-10">
+          {projects.map((project) => (
+            <li class="border-t border-hairline py-6 last:border-b">
+              <p class="font-sans text-[0.8125rem] tracking-wide text-ink-faint uppercase">
+                {STATUS_LABELS[project.data.status]}
+              </p>
+              {/* Detail routes arrive with the project layout (Phase 5). */}
+              <p class="mt-1 font-sans text-xl font-semibold tracking-tight">
+                {project.data.title}
+              </p>
+              <p class="mt-2 font-serif leading-relaxed text-ink-muted">
+                {project.data.description}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </main>
+</BaseLayout>
