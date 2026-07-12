@@ -13,7 +13,10 @@
     "test": "turbo run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "validate:content": "pnpm --filter @opends/content-validation validate"
+    "validate:content": "pnpm --filter @opends/content-validation validate",
+    "new:concept": "pnpm --filter @opends/authoring new-concept",
+    "roadmap": "pnpm --filter @opends/authoring roadmap",
+    "render:animation": "python animations/render.py"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

@@ -159,6 +159,22 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@24.13.3)(vite@8.1.4(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
 
+  tooling/authoring:
+    dependencies:
+      '@opends/content-schema':
+        specifier: workspace:*
+        version: link:../../packages/content-schema
+      '@opends/graph':
+        specifier: workspace:*
+        version: link:../../packages/graph
+      gray-matter:
+        specifier: ^4.0.3
+        version: 4.0.3
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.3
+
   tooling/content-validation:
     dependencies:
       '@opends/content-schema':

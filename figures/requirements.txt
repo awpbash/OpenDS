@@ -1,0 +1,4 @@
+# Static figure dependencies. Install into the same venv as the
+# animations, or its own:  pip install -r figures/requirements.txt
+matplotlib>=3.9
+numpy>=2.0

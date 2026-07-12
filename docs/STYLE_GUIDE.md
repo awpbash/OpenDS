@@ -1,6 +1,6 @@
 # Style guide
 
-Skeleton version. This guide grows as the first articles go through review and we learn what advice we actually need.
+How OpenDS articles sound and read. This guide grows as articles go through review and we learn what advice we actually need. The step-by-step writing flow lives in [WRITE_AN_ARTICLE.md](WRITE_AN_ARTICLE.md).
 
 ## Voice
 

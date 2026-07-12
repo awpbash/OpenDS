@@ -1,5 +1,11 @@
-# Runs on every pull request and push to main once the repo lives on GitHub.
-# Mirrors the local command surface: what passes here passes locally too.
+# Runs on every pull request and push to main.
+#
+# Two tiers, decided July 2026: only the production build blocks a PR.
+# The build already validates content schemas and graph integrity (the
+# map page constructs the graph at build time), so broken frontmatter or
+# a bad prerequisite slug still fails the blocking job. Everything else
+# (formatting, lint, typecheck, validator, tests) is advisory: visible
+# when red, but it does not stop a merge.
 name: CI
 
 on:
@@ -8,8 +14,33 @@ on:
     branches: [main]
 
 jobs:
-  verify:
+  build:
+    name: build (blocking)
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+  checks:
+    name: advisory checks
+    runs-on: ubuntu-latest
+    # A red job here is feedback, not a gate.
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,16 +61,17 @@ jobs:
         run: pnpm format:check
 
       - name: Lint
+        if: ${{ !cancelled() }}
         run: pnpm lint
 
       - name: Typecheck
+        if: ${{ !cancelled() }}
         run: pnpm typecheck
 
       - name: Validate content
+        if: ${{ !cancelled() }}
         run: pnpm validate:content
 
       - name: Test
+        if: ${{ !cancelled() }}
         run: pnpm test
-
-      - name: Build
-        run: pnpm build

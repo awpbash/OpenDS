@@ -1,0 +1,19 @@
+{
+  "name": "@opends/authoring",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "new-concept": "node src/new-concept.ts",
+    "roadmap": "node src/roadmap.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@opends/content-schema": "workspace:*",
+    "@opends/graph": "workspace:*",
+    "gray-matter": "^4.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0"
+  }
+}

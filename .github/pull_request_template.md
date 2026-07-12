@@ -1,6 +1,7 @@
 ## What this PR does
 
-<!-- One or two sentences. For articles: which concept, and what stage it is at. -->
+<!-- One or two sentences. For articles: which concept, and what stage it is at.
+     Playbooks for every kind of contribution live in docs/CONTRIBUTING.md. -->
 
 ## Type of change
 

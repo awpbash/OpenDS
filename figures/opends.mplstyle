@@ -1,0 +1,50 @@
+# OpenDS matplotlib house style.
+#
+# Apply through figures/opends_plot.py, which also registers the Inter font:
+#
+#     import opends_plot
+#     opends_plot.apply()
+#
+# Figures are drawn for the light palette only. The site frames every figure
+# on a paper surface in dark mode, so never make a dark variant.
+
+figure.facecolor: fdfcfa
+axes.facecolor: fdfcfa
+savefig.facecolor: fdfcfa
+savefig.dpi: 200
+savefig.bbox: tight
+
+font.family: Inter
+font.size: 11
+text.color: 1f1c19
+
+axes.edgecolor: 948f87
+axes.labelcolor: 1f1c19
+axes.titlecolor: 1f1c19
+axes.titlesize: 13
+axes.titleweight: 600
+axes.labelsize: 11
+axes.linewidth: 0.8
+axes.spines.top: False
+axes.spines.right: False
+axes.grid: True
+axes.axisbelow: True
+
+# Teal accent first, then muted family hues. Most figures should only
+# ever reach the second or third color.
+axes.prop_cycle: cycler("color", ["0f766e", "3d5fa8", "b06a35", "9d4d7c", "5f7d3f", "a85764"])
+
+grid.color: e7e3dc
+grid.linewidth: 0.7
+
+xtick.color: 5f5a53
+ytick.color: 5f5a53
+xtick.labelsize: 10
+ytick.labelsize: 10
+
+lines.linewidth: 2.0
+patch.linewidth: 0.8
+patch.edgecolor: fdfcfa
+
+legend.frameon: False
+legend.fontsize: 10

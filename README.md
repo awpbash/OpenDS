@@ -22,38 +22,47 @@ pnpm dev          # start the site at http://localhost:4321
 Other commands:
 
 ```bash
-pnpm build             # production build
-pnpm test              # unit tests
-pnpm lint              # lint all packages
-pnpm typecheck         # TypeScript checks
-pnpm format            # format with Prettier
-pnpm validate:content  # check article frontmatter and contributor references
+pnpm new:concept <slug> <your-id>   # scaffold an article from the knowledge map
+pnpm validate:content               # check frontmatter and contributor references
+pnpm roadmap                        # regenerate docs/CONTENT_ROADMAP.md from the map
+pnpm render:animation               # render and encode a Manim scene (see docs)
+pnpm build                          # production build (the check that blocks PRs)
+pnpm test                           # unit tests
+pnpm lint                           # lint all packages
+pnpm typecheck                      # TypeScript checks
+pnpm format                         # format with Prettier
 ```
 
 ## Repository map
 
 ```text
-apps/web/          the Astro site: routes, layouts, styles
+apps/web/          the Astro site: routes, layouts, styles, graph UI
 packages/
   content-schema/  shared frontmatter schemas (the source of truth for metadata)
+  graph/           knowledge graph construction, validation, planned-topic skeleton
   widgets/         interactive educational React components
+  inference/       pure-TypeScript forward pass for model-backed widgets
 content/
   concepts/        concept articles (MDX)
   papers/          paper deep dives (coming later)
   projects/        project writeups (coming later)
   cheat-sheets/    revision summaries (coming later)
   contributors/    the contributor registry
-animations/        Manim animation source and rendered assets
-tooling/           content validation and future build tooling
-docs/              guides for contributors and reviewers
+animations/        Manim sources, fonts, render script, archived renders
+figures/           matplotlib house style, diagram palette, figure sources
+models/            training scripts for the tiny models some widgets run
+tooling/
+  content-validation/  frontmatter checks behind pnpm validate:content
+  authoring/           the new:concept scaffolder and roadmap generator
+docs/              contributor playbooks (start at docs/CONTRIBUTING.md)
 ```
 
-Articles are plain MDX files with YAML frontmatter. The knowledge graph (prerequisites, backlinks, what a concept unlocks) is generated from that frontmatter. Nobody maintains links by hand.
+Articles are plain MDX files with YAML frontmatter. The knowledge graph (prerequisites, backlinks, what a concept unlocks) is generated from that frontmatter plus the planned-topic skeleton in `packages/graph`. Nobody maintains links by hand, and `docs/CONTENT_ROADMAP.md` is generated from the same data.
 
 ## Contributing
 
-Start with [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md). You do not need to be a frontend engineer to contribute an article: there is a path for writing in a shared doc and having someone port it for you.
+Start with [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md), which points to a playbook for each kind of work: writing, reviewing, figures, animations, widgets.
 
-Looking for something to write? [docs/CONTENT_ROADMAP.md](docs/CONTENT_ROADMAP.md) is a menu of over a hundred planned topics, each with a vision of what the page should teach and what visual would make it special.
+Looking for something to write? [docs/CONTENT_ROADMAP.md](docs/CONTENT_ROADMAP.md) lists every topic on the knowledge map and which ones still need an author.
 
 Every article needs an independent review before it can be marked curated. Review here is collaborative learning, not gatekeeping.
