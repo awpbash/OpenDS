@@ -69,6 +69,12 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     prerequisites: [],
   },
   {
+    slug: "conditional-probability-and-independence",
+    title: "Conditional Probability and Independence",
+    family: "probability-statistics",
+    prerequisites: ["probability-basics"],
+  },
+  {
     slug: "random-variables",
     title: "Random Variables",
     family: "probability-statistics",
@@ -87,10 +93,16 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     prerequisites: ["random-variables"],
   },
   {
+    slug: "entropy-and-information",
+    title: "Entropy and Information",
+    family: "probability-statistics",
+    prerequisites: ["distributions"],
+  },
+  {
     slug: "bayes-theorem",
     title: "Bayes' Theorem",
     family: "probability-statistics",
-    prerequisites: ["probability-basics"],
+    prerequisites: ["conditional-probability-and-independence"],
   },
   {
     slug: "mean-median-mode",
@@ -109,6 +121,18 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     title: "Correlation",
     family: "probability-statistics",
     prerequisites: ["variance-and-spread"],
+  },
+  {
+    slug: "skewness-and-kurtosis",
+    title: "Skewness and Kurtosis",
+    family: "probability-statistics",
+    prerequisites: ["variance-and-spread", "distributions"],
+  },
+  {
+    slug: "correlation-vs-causation",
+    title: "Correlation vs Causation",
+    family: "probability-statistics",
+    prerequisites: ["correlation"],
   },
   {
     slug: "sampling-and-bias",
@@ -147,16 +171,44 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     prerequisites: ["hypothesis-testing"],
   },
   {
+    slug: "choosing-a-statistical-test",
+    title: "Choosing a Statistical Test",
+    family: "probability-statistics",
+    prerequisites: ["hypothesis-testing", "skewness-and-kurtosis"],
+  },
+  {
+    slug: "multiple-comparisons",
+    title: "The Multiple Comparisons Problem",
+    family: "probability-statistics",
+    prerequisites: ["p-values-and-significance"],
+  },
+  {
     slug: "ab-testing",
     title: "A/B Testing",
     family: "probability-statistics",
-    prerequisites: ["hypothesis-testing", "sampling-and-bias"],
+    prerequisites: [
+      "sampling-and-bias",
+      "choosing-a-statistical-test",
+      "correlation-vs-causation",
+    ],
   },
   {
     slug: "experiment-pitfalls",
     title: "Experiment Pitfalls",
     family: "probability-statistics",
-    prerequisites: ["ab-testing", "p-values-and-significance"],
+    prerequisites: ["ab-testing", "statistical-power", "multiple-comparisons"],
+  },
+  {
+    slug: "causal-inference-methods",
+    title: "Causal Inference Methods",
+    family: "probability-statistics",
+    prerequisites: ["correlation-vs-causation", "ab-testing"],
+  },
+  {
+    slug: "multi-armed-bandits",
+    title: "Multi-Armed Bandits",
+    family: "probability-statistics",
+    prerequisites: ["ab-testing"],
   },
   {
     slug: "maximum-likelihood",
@@ -179,6 +231,12 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     prerequisites: [],
   },
   {
+    slug: "norms-and-distances",
+    title: "Norms and Distances",
+    family: "linear-algebra-optimization",
+    prerequisites: ["vectors-and-matrices"],
+  },
+  {
     slug: "matrix-multiplication",
     title: "Matrix Multiplication",
     family: "linear-algebra-optimization",
@@ -189,6 +247,12 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     title: "Eigenvalues and Eigenvectors",
     family: "linear-algebra-optimization",
     prerequisites: ["matrix-multiplication"],
+  },
+  {
+    slug: "svd",
+    title: "SVD and Matrix Decompositions",
+    family: "linear-algebra-optimization",
+    prerequisites: ["eigenvalues-and-eigenvectors"],
   },
   {
     slug: "derivatives-gradients-chain-rule",
@@ -206,7 +270,11 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     slug: "gradient-descent",
     title: "Gradient Descent",
     family: "linear-algebra-optimization",
-    prerequisites: ["derivatives-gradients-chain-rule", "loss-functions"],
+    prerequisites: [
+      "derivatives-gradients-chain-rule",
+      "convexity",
+      "loss-functions",
+    ],
   },
   {
     slug: "stochastic-gradient-descent",
@@ -259,6 +327,18 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     prerequisites: ["correlation", "prediction-error"],
   },
   {
+    slug: "regression-diagnostics",
+    title: "Regression Assumptions and Diagnostics",
+    family: "machine-learning",
+    prerequisites: ["linear-regression"],
+  },
+  {
+    slug: "multicollinearity",
+    title: "Multicollinearity",
+    family: "machine-learning",
+    prerequisites: ["regression-diagnostics", "correlation"],
+  },
+  {
     slug: "loss-functions",
     title: "Loss Functions",
     family: "machine-learning",
@@ -274,13 +354,21 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     slug: "cross-entropy-and-log-likelihood",
     title: "Cross-Entropy and Log-Likelihood",
     family: "machine-learning",
-    prerequisites: ["maximum-likelihood", "logistic-regression"],
+    prerequisites: [
+      "maximum-likelihood",
+      "logistic-regression",
+      "entropy-and-information",
+    ],
   },
   {
     slug: "regularization",
     title: "Regularization",
     family: "machine-learning",
-    prerequisites: ["linear-regression", "bias-variance-tradeoff"],
+    prerequisites: [
+      "bias-variance-tradeoff",
+      "multicollinearity",
+      "norms-and-distances",
+    ],
   },
   {
     slug: "feature-engineering",
@@ -295,10 +383,16 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     prerequisites: ["feature-engineering"],
   },
   {
+    slug: "feature-selection",
+    title: "Feature Selection",
+    family: "machine-learning",
+    prerequisites: ["feature-engineering", "correlation"],
+  },
+  {
     slug: "decision-trees",
     title: "Decision Trees",
     family: "machine-learning",
-    prerequisites: ["prediction-error"],
+    prerequisites: ["prediction-error", "entropy-and-information"],
   },
   {
     slug: "ensembles-and-bagging",
@@ -319,10 +413,16 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     prerequisites: ["ensembles-and-bagging", "gradient-descent"],
   },
   {
+    slug: "model-interpretability",
+    title: "Model Interpretability",
+    family: "machine-learning",
+    prerequisites: ["gradient-boosting"],
+  },
+  {
     slug: "k-nearest-neighbors",
     title: "K-Nearest Neighbors",
     family: "machine-learning",
-    prerequisites: ["feature-scaling-and-encoding"],
+    prerequisites: ["feature-scaling-and-encoding", "norms-and-distances"],
   },
   {
     slug: "support-vector-machines",
@@ -338,17 +438,36 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
   },
   {
     slug: "kmeans-clustering",
-    title: "K-Means and Clustering",
+    title: "K-Means Clustering",
     family: "machine-learning",
     prerequisites: ["feature-scaling-and-encoding"],
+  },
+  {
+    slug: "clustering-beyond-kmeans",
+    title: "Clustering Beyond K-Means",
+    family: "machine-learning",
+    prerequisites: ["kmeans-clustering"],
+  },
+  {
+    slug: "anomaly-detection",
+    title: "Anomaly Detection",
+    family: "machine-learning",
+    prerequisites: ["outliers", "kmeans-clustering"],
+  },
+  {
+    slug: "curse-of-dimensionality",
+    title: "The Curse of Dimensionality",
+    family: "machine-learning",
+    prerequisites: ["norms-and-distances"],
   },
   {
     slug: "pca",
     title: "PCA and Dimensionality Reduction",
     family: "machine-learning",
     prerequisites: [
-      "eigenvalues-and-eigenvectors",
+      "svd",
       "feature-scaling-and-encoding",
+      "curse-of-dimensionality",
     ],
   },
   {
@@ -375,6 +494,12 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     family: "machine-learning",
     prerequisites: ["cross-validation"],
   },
+  {
+    slug: "reinforcement-learning-basics",
+    title: "Reinforcement Learning Basics",
+    family: "machine-learning",
+    prerequisites: ["expectation-and-variance", "gradient-descent"],
+  },
 
   // ── Time Series ────────────────────────────────────────────────────
   {
@@ -396,10 +521,19 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     prerequisites: ["time-series-basics"],
   },
   {
+    slug: "seasonality-and-decomposition",
+    title: "Seasonality and Decomposition",
+    family: "time-series",
+    prerequisites: ["time-series-basics"],
+  },
+  {
     slug: "arima",
     title: "ARIMA",
     family: "time-series",
-    prerequisites: ["stationarity-and-autocorrelation"],
+    prerequisites: [
+      "stationarity-and-autocorrelation",
+      "seasonality-and-decomposition",
+    ],
   },
   {
     slug: "forecast-backtesting",
@@ -419,7 +553,7 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     slug: "matrix-factorization",
     title: "Matrix Factorization",
     family: "recommender-systems",
-    prerequisites: ["collaborative-filtering", "matrix-multiplication"],
+    prerequisites: ["collaborative-filtering", "svd"],
   },
   {
     slug: "content-based-filtering",
@@ -434,6 +568,12 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     prerequisites: ["classification-metrics"],
   },
   {
+    slug: "learning-to-rank",
+    title: "Learning to Rank",
+    family: "recommender-systems",
+    prerequisites: ["ranking-metrics", "gradient-boosting"],
+  },
+  {
     slug: "embedding-based-retrieval",
     title: "Embedding-Based Retrieval",
     family: "recommender-systems",
@@ -443,7 +583,7 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     slug: "cold-start",
     title: "The Cold-Start Problem",
     family: "recommender-systems",
-    prerequisites: ["collaborative-filtering"],
+    prerequisites: ["collaborative-filtering", "content-based-filtering"],
   },
 
   // ── Deep Learning ──────────────────────────────────────────────────
@@ -469,7 +609,11 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     slug: "training-neural-networks",
     title: "Training Neural Networks",
     family: "deep-learning",
-    prerequisites: ["backpropagation", "optimizers-momentum-and-adam"],
+    prerequisites: [
+      "backpropagation",
+      "optimizers-momentum-and-adam",
+      "activation-functions",
+    ],
   },
   {
     slug: "regularization-in-deep-learning",
@@ -486,6 +630,12 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
   {
     slug: "embeddings",
     title: "Embeddings",
+    family: "deep-learning",
+    prerequisites: ["neural-networks"],
+  },
+  {
+    slug: "autoencoders",
+    title: "Autoencoders",
     family: "deep-learning",
     prerequisites: ["neural-networks"],
   },
@@ -513,6 +663,24 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     family: "deep-learning",
     prerequisites: ["encoder-decoder", "embeddings"],
   },
+  {
+    slug: "gans",
+    title: "Generative Adversarial Networks",
+    family: "deep-learning",
+    prerequisites: ["training-neural-networks"],
+  },
+  {
+    slug: "diffusion-models",
+    title: "Diffusion Models",
+    family: "deep-learning",
+    prerequisites: ["autoencoders", "training-neural-networks"],
+  },
+  {
+    slug: "contrastive-learning",
+    title: "Contrastive Learning",
+    family: "deep-learning",
+    prerequisites: ["embeddings", "data-augmentation"],
+  },
 
   // ── NLP ────────────────────────────────────────────────────────────
   {
@@ -528,6 +696,12 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     prerequisites: ["feature-engineering"],
   },
   {
+    slug: "text-classification",
+    title: "Text Classification",
+    family: "nlp",
+    prerequisites: ["bag-of-words-and-tfidf", "classification-metrics"],
+  },
+  {
     slug: "word-embeddings",
     title: "Word Embeddings",
     family: "nlp",
@@ -539,6 +713,12 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     family: "nlp",
     prerequisites: ["probability-basics", "tokenization"],
   },
+  {
+    slug: "encoder-models",
+    title: "Encoder Models and BERT",
+    family: "nlp",
+    prerequisites: ["transformers"],
+  },
 
   // ── LLMs & GenAI ───────────────────────────────────────────────────
   {
@@ -546,6 +726,18 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     title: "Pretraining and Next-Token Prediction",
     family: "llms-genai",
     prerequisites: ["transformers", "language-models"],
+  },
+  {
+    slug: "scaling-laws",
+    title: "Scaling Laws",
+    family: "llms-genai",
+    prerequisites: ["pretraining-and-next-token-prediction"],
+  },
+  {
+    slug: "mixture-of-experts",
+    title: "Mixture of Experts",
+    family: "llms-genai",
+    prerequisites: ["transformers", "scaling-laws"],
   },
   {
     slug: "sampling-and-decoding",
@@ -563,7 +755,10 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     slug: "fine-tuning",
     title: "Fine-Tuning",
     family: "llms-genai",
-    prerequisites: ["pretraining-and-next-token-prediction"],
+    prerequisites: [
+      "pretraining-and-next-token-prediction",
+      "transfer-learning",
+    ],
   },
   {
     slug: "lora-and-peft",
@@ -575,13 +770,13 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     slug: "instruction-tuning-and-rlhf",
     title: "Instruction Tuning and RLHF",
     family: "llms-genai",
-    prerequisites: ["fine-tuning"],
+    prerequisites: ["fine-tuning", "reinforcement-learning-basics"],
   },
   {
     slug: "vector-search",
     title: "Vector Search",
     family: "llms-genai",
-    prerequisites: ["embeddings"],
+    prerequisites: ["embeddings", "norms-and-distances", "encoder-models"],
   },
   {
     slug: "rag",
@@ -608,7 +803,19 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     slug: "llm-inference-optimization",
     title: "LLM Inference Optimization",
     family: "llms-genai",
-    prerequisites: ["transformers"],
+    prerequisites: ["transformers", "sampling-and-decoding"],
+  },
+  {
+    slug: "knowledge-distillation",
+    title: "Knowledge Distillation",
+    family: "llms-genai",
+    prerequisites: ["training-neural-networks"],
+  },
+  {
+    slug: "multimodal-models",
+    title: "Multimodal Models",
+    family: "llms-genai",
+    prerequisites: ["contrastive-learning", "transformers"],
   },
   {
     slug: "ai-safety-basics",
@@ -648,11 +855,35 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     family: "computer-vision",
     prerequisites: ["convolutional-networks"],
   },
+  {
+    slug: "object-detection",
+    title: "Object Detection",
+    family: "computer-vision",
+    prerequisites: ["cnn-architectures"],
+  },
+  {
+    slug: "image-segmentation",
+    title: "Image Segmentation",
+    family: "computer-vision",
+    prerequisites: ["object-detection"],
+  },
+  {
+    slug: "vision-transformers",
+    title: "Vision Transformers",
+    family: "computer-vision",
+    prerequisites: ["transformers", "convolutional-networks"],
+  },
 
   // ── Data Engineering ───────────────────────────────────────────────
   {
     slug: "data-cleaning",
     title: "Data Cleaning",
+    family: "data-engineering",
+    prerequisites: ["types-of-data", "missing-data", "outliers"],
+  },
+  {
+    slug: "relational-data-and-sql",
+    title: "Relational Data and SQL",
     family: "data-engineering",
     prerequisites: ["types-of-data"],
   },
@@ -660,7 +891,7 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     slug: "data-pipelines",
     title: "Data Pipelines",
     family: "data-engineering",
-    prerequisites: ["data-cleaning"],
+    prerequisites: ["data-cleaning", "relational-data-and-sql"],
   },
   {
     slug: "batch-vs-streaming",
@@ -673,6 +904,18 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     title: "Storage and File Formats",
     family: "data-engineering",
     prerequisites: ["data-pipelines"],
+  },
+  {
+    slug: "data-warehouses-and-lakes",
+    title: "Data Warehouses and Lakes",
+    family: "data-engineering",
+    prerequisites: ["relational-data-and-sql", "storage-and-file-formats"],
+  },
+  {
+    slug: "distributed-data-processing",
+    title: "Distributed Data Processing",
+    family: "data-engineering",
+    prerequisites: ["batch-vs-streaming"],
   },
 
   // ── Production ML ──────────────────────────────────────────────────
@@ -711,6 +954,12 @@ export const PLANNED_CONCEPTS: PlannedConcept[] = [
     title: "ML System Design",
     family: "production-ml",
     prerequisites: ["model-deployment-and-serving", "feature-stores"],
+  },
+  {
+    slug: "fairness-and-bias-in-ml",
+    title: "Fairness and Bias in ML",
+    family: "production-ml",
+    prerequisites: ["classification-metrics", "sampling-and-bias"],
   },
 ];
 

@@ -9,6 +9,8 @@ dist/
 # generated model artifacts (written by models/src/ training scripts)
 models/weights/
 apps/web/public/models/
+# generated dataset snapshots (written by figures/src/*/build_widget_data.py)
+apps/web/public/data/
 .astro/
 .turbo/
 .vercel/

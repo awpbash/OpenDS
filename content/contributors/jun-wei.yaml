@@ -2,11 +2,12 @@
 # used in article frontmatter under authors / reviewers.
 name: Jun Wei
 # Fill these in to complete your About page card:
-# role: Data Scientist at ...
-# interests:
-#   - LLMs
-#   - visualisation
-# github: your-github-username
+role: Data Scientist @ GovTech
+interests:
+  - Computer Vision
+  - Multimodal AI
+github: awpbash
 # linkedin: https://www.linkedin.com/in/your-handle
-# website: https://...
+website: https://junwei.ng
+bio: Side quested a whole engineering degree before realising that data science is the path to enlightenment. Now on a mission to make data science accessible to all.
 # avatar: /images/contributors/jun-wei.jpg   (drop the photo in apps/web/public/images/contributors/)

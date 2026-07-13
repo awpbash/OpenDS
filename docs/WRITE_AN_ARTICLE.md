@@ -28,6 +28,10 @@ linkedin: "https://www.linkedin.com/in/yourhandle"
 
 Only `name` is required. The rest shows up on the About page.
 
+The filename without `.yaml` is your contributor id. It is what goes in the
+`authors` field of your article frontmatter — for example, a file named
+`jun-wei.yaml` means your frontmatter reads `authors: [jun-wei]`.
+
 ## 1. Pick a topic
 
 The knowledge map is the topic list. Browse it at `/map` on the site, or

@@ -2,13 +2,10 @@
 import { getCollection } from "astro:content";
 import BaseLayout from "../layouts/BaseLayout.astro";
 
-const concepts = await getCollection("concepts");
 const contributors = (await getCollection("contributors")).sort((a, b) =>
   a.data.name.localeCompare(b.data.name),
 );
 
-// Qualitative credit only: what each person worked on, never counts or
-// ranks. See CLAUDE.md section 25.
 const people = contributors.map((contributor) => ({
   ...contributor,
   initials: contributor.data.name
@@ -16,12 +13,6 @@ const people = contributors.map((contributor) => ({
     .slice(0, 2)
     .map((part) => part[0])
     .join(""),
-  wrote: concepts
-    .filter((concept) => concept.data.authors.includes(contributor.id))
-    .sort((a, b) => a.data.title.localeCompare(b.data.title)),
-  reviewed: concepts
-    .filter((concept) => concept.data.reviewers.includes(contributor.id))
-    .sort((a, b) => a.data.title.localeCompare(b.data.title)),
 }));
 
 const loop = [
@@ -199,43 +190,6 @@ const loop = [
                 <p class="mt-3 font-sans text-[0.8125rem] text-ink-faint">
                   Into {person.data.interests.join(", ")}
                 </p>
-              )}
-
-              {(person.wrote.length > 0 || person.reviewed.length > 0) && (
-                <div class="mt-4 space-y-1 border-t border-hairline pt-3 font-sans text-sm text-ink-muted">
-                  {person.wrote.length > 0 && (
-                    <p>
-                      Wrote{" "}
-                      {person.wrote.map((concept, i) => (
-                        <Fragment>
-                          <a
-                            href={`/concepts/${concept.data.slug}`}
-                            class="text-ink underline decoration-hairline underline-offset-4 hover:text-accent"
-                          >
-                            {concept.data.title}
-                          </a>
-                          {i < person.wrote.length - 1 && ", "}
-                        </Fragment>
-                      ))}
-                    </p>
-                  )}
-                  {person.reviewed.length > 0 && (
-                    <p>
-                      Reviewed{" "}
-                      {person.reviewed.map((concept, i) => (
-                        <Fragment>
-                          <a
-                            href={`/concepts/${concept.data.slug}`}
-                            class="text-ink underline decoration-hairline underline-offset-4 hover:text-accent"
-                          >
-                            {concept.data.title}
-                          </a>
-                          {i < person.reviewed.length - 1 && ", "}
-                        </Fragment>
-                      ))}
-                    </p>
-                  )}
-                </div>
               )}
 
               {(person.data.github ||

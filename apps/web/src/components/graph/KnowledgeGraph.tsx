@@ -54,18 +54,18 @@ const asNode = (end: SimLink["source"]): SimNode => end as SimNode;
  * regions. Tune positions here, not in the forces.
  */
 const FAMILY_ANCHORS: Record<string, { x: number; y: number }> = {
-  foundations: { x: -340, y: -20 },
-  "probability-statistics": { x: -190, y: -150 },
-  "linear-algebra-optimization": { x: -180, y: 160 },
-  "time-series": { x: -30, y: -240 },
+  foundations: { x: -410, y: -25 },
+  "probability-statistics": { x: -230, y: -180 },
+  "linear-algebra-optimization": { x: -215, y: 190 },
+  "time-series": { x: -35, y: -285 },
   "machine-learning": { x: -20, y: 0 },
-  "data-engineering": { x: -60, y: 240 },
-  "recommender-systems": { x: 170, y: -200 },
-  "deep-learning": { x: 170, y: 60 },
-  "production-ml": { x: 150, y: 230 },
-  nlp: { x: 320, y: -120 },
-  "computer-vision": { x: 350, y: 200 },
-  "llms-genai": { x: 360, y: 30 },
+  "data-engineering": { x: -70, y: 285 },
+  "recommender-systems": { x: 205, y: -240 },
+  "deep-learning": { x: 205, y: 70 },
+  "production-ml": { x: 180, y: 275 },
+  nlp: { x: 385, y: -145 },
+  "computer-vision": { x: 420, y: 240 },
+  "llms-genai": { x: 430, y: 35 },
 };
 
 const anchorFor = (family: string, scale: number) => {
@@ -106,8 +106,8 @@ export default function KnowledgeGraph({
   familyLabels,
 }: Props) {
   const full = variant === "full";
-  const width = full ? 920 : 340;
-  const height = full ? 620 : 250;
+  const width = full ? 1060 : 340;
+  const height = full ? 740 : 250;
 
   const svgRef = useRef<SVGSVGElement>(null);
   const [frame, setFrame] = useState(0);
@@ -117,7 +117,9 @@ export default function KnowledgeGraph({
   const [view, setView] = useState({ x: 0, y: 0, k: 1 });
 
   // Anchor scale maps the shared FAMILY_ANCHORS layout onto each canvas.
-  const anchorScale = full ? 1 : 0.34;
+  // The mini factor compensates for the wider full-map spread so the
+  // mini graph keeps its original footprint.
+  const anchorScale = full ? 1 : 0.29;
 
   const sim = useMemo(() => {
     const simNodes: SimNode[] = nodes.map((node) => ({ ...node }));
@@ -138,7 +140,7 @@ export default function KnowledgeGraph({
             .strength(0.25),
         )
         .force("charge", forceManyBody().strength(full ? -60 : -10))
-        .force("collide", forceCollide(full ? 15 : 5.5))
+        .force("collide", forceCollide(full ? 13 : 5.5))
         .force(
           "x",
           forceX<SimNode>(
