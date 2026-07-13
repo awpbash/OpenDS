@@ -3,11 +3,9 @@ import { getCollection, render } from "astro:content";
 import "katex/dist/katex.min.css";
 import { buildGraph, findNode, unlocks as graphUnlocks } from "@opends/graph";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import MeanMedianOutlierExplorer from "../../components/mdx/MeanMedianOutlierExplorer.astro";
-import ObservationsExplorer from "../../components/mdx/ObservationsExplorer.astro";
-import ResaleDatasetExplorer from "../../components/mdx/ResaleDatasetExplorer.astro";
-import TransformerPredictor from "../../components/mdx/TransformerPredictor.astro";
 import AnimatedFigure from "../../components/mdx/AnimatedFigure.astro";
+import ObservationsExplorer from "../../components/mdx/ObservationsExplorer.astro";
+import TransformerPredictor from "../../components/mdx/TransformerPredictor.astro";
 import { readingMinutes, STATUS_LABELS } from "../../lib/content";
 
 export async function getStaticPaths() {
@@ -28,12 +26,11 @@ const toc = headings.filter(
 );
 
 // Widgets and media components authors can use in MDX without imports.
+// Add component imports here when the corresponding widget branch is merged.
 const mdxComponents = {
-  MeanMedianOutlierExplorer,
-  ObservationsExplorer,
-  ResaleDatasetExplorer,
-  TransformerPredictor,
   AnimatedFigure,
+  ObservationsExplorer,
+  TransformerPredictor,
 };
 
 const [allConcepts, contributors] = await Promise.all([
