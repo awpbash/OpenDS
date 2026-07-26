@@ -9,7 +9,8 @@
 name: CI
 
 on:
-  pull_request:
+  # temp disable pr CI
+  #pull_request: 
   push:
     branches: [main]
 
