@@ -59,6 +59,43 @@ pnpm lint                # linting
 pnpm typecheck           # TypeScript
 ```
 
+## Using the contributor site
+
+If you'd rather not set up a local dev environment, the
+[OpenDS Contributor app](https://opends-contributor.vercel.app/) does the
+same golden path through a browser. It reads and writes the same GitHub
+branches, PRs, and CI checks as Path A above — there's no separate
+database or draft store, it's just a UI on top of GitHub. Use whichever
+is more convenient, or mix both (e.g. write locally, review on the site).
+
+### Write a post
+
+1. Go to the [contributor app](https://opends-contributor.vercel.app/) and
+   sign in with GitHub (device flow — you'll get a code to enter on
+   github.com). You need write access to the OpenDS repo.
+2. From **My Work**, click **+ New Post** and pick a content type
+   (concept, paper, project, or cheat sheet).
+3. Fill in the frontmatter form (title, slug, description, prerequisites,
+   `partOf`, etc.) and write the MDX body in the editor panel.
+4. Click **Upload PR**. This creates a branch (e.g. `concept/<slug>`),
+   commits the MDX file, and opens a PR — you land on its review page.
+   CI and the Vercel preview run on it exactly as if you'd pushed from
+   the command line.
+5. To keep editing, go back to **My Work**, find the PR under
+   **In Progress**, and reopen it — the editor loads the branch's current
+   content, and saving again pushes to the same branch (**Update PR**).
+
+### Review and approve a post
+
+1. Go to **Review PRs** (`/review`) to see all open PRs.
+2. Open one to see the rendered **Preview** tab (what readers will see) or
+   the **Source & Comments** tab (raw MDX).
+3. Leave an optional review comment, then choose **Approve** or
+   **Request Changes**. You can't approve your own PR.
+4. Once a reviewer has approved, **Merge PR** becomes available (only
+   when GitHub reports no conflicts). Merging here is the same as merging
+   on GitHub — it triggers the production deploy.
+
 ## Article lifecycle
 
 ```text
