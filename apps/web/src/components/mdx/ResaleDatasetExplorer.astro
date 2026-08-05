@@ -1,0 +1,8 @@
+---
+// Author-facing wrapper: lets MDX use <ResaleDatasetExplorer /> with no
+// imports while keeping the hydration directive out of content files. The
+// widget fetches its data snapshot only once it scrolls into view.
+import { ResaleDatasetExplorer as Widget } from "@opends/widgets";
+---
+
+<Widget client:visible {...Astro.props} />

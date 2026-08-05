@@ -1,0 +1,334 @@
+---
+title: "Mean, Median, and Mode"
+slug: "mean-median-mode"
+description: "Not all averages are the same and why they matter."
+status: "draft"
+difficulty: "beginner"
+family: "probability-statistics"
+cover: "/images/concepts/mean-median-mode/price-histogram.png"
+coverAlt: "Histogram of 12,243 HDB resale prices, right-skewed, with the mean sitting above the median"
+published: 2026-07-12
+authors:
+  - jun-wei
+reviewers: []
+lastReviewed: null
+prerequisites:
+  - exploratory-data-analysis
+partOf: []
+papers: []
+projects: []
+cheatSheets: []
+tags:
+  - fundamentals
+  - statistics
+---
+
+## 1. One question, three answers
+
+Someone asks you what an average HDB flat costs in Singapore. You pulled some data from [data.gov.sg](https://data.gov.sg/datasets/d_8b84c4ee58e3cfc0ece0d773c8ca6abc/view) and
+found 12,243 recorded
+sales data points in front of you, ranging from \$238,888 to \$1,728,000. Reading
+out all twelve thousand is not an answer. The question is really asking you
+to compress the whole data into one number that deserves the word _average_.
+
+That word hides a choice. There are at least three defensible one-number
+answers, and on this dataset they do not agree:
+
+| Metric | Value | The question it actually answers                            |
+| ------ | --------------------- | ----------------------------------------------------------- |
+| Mean   | \$659,717             | Where is the balance point of all the prices?               |
+| Median | \$630,000             | What price splits the dataset into two equal halves? |
+| Mode   | 4-room (44% of sales) | Which kind of sale happens most often?                      |
+
+None of these is wrong, and none of them is the whole truth. The rest of
+these notes develops what each one optimizes, when they disagree, and what
+the disagreement tells you. Before summarizing the data, let's play around and explore with the dataset below.
+
+
+<ResaleDatasetExplorer />
+
+## 2. The mean
+
+The mean of values $x_1, x_2, \dots, x_n$ is defined as the sum divided by
+the number of values:
+
+$$
+\bar{x} = \frac{1}{n} \sum_{i=1}^{n} x_i
+$$
+
+For the 12,243 sale prices, $\bar{x}$ is \$659,717 ie. if the total
+money that changed hands in six months had been split equally across every
+transaction, each flat would have cost \$659,717.
+
+The mean is also the entry point to a family you will keep meeting. The
+$k$-th raw _sample moment_ of the data is
+
+$$
+m_k = \frac{1}{n} \sum_{i=1}^{n} x_i^k
+$$
+
+and setting $k = 1$ recovers the mean exactly, so the mean is the first
+sample moment. Variance is the second moment, and skewness, the asymmetry that drives everything in
+[section 6](#6-differing-averages), is measured
+as the third moment.
+
+**Intuition.**  Imagine placing all 12,243 prices along a ruler, with each price represented by an equal weight. The mean,
+$\bar{x}$, is the point at which the ruler balances. Prices farther from the pivot exert a stronger pull, and at the mean, the pulls from both sides cancel out exactly.
+
+This balancing interpretation also reveals something deeper: the mean is not merely a formula, it is the solution to an optimization problem.
+
+Suppose you must summarize all the prices using a single value $c$. For each price $x_i$, your error is the distance $x_i-c$. If the penalty for an error is its squared distance, then the total penalty is
+
+$$
+E(c) = \sum_{i=1}^{n} (x_i - c)^2
+$$
+
+Differentiate with respect to $c$ and set the derivative to zero:
+
+$$
+\frac{dE}{dc} = -2 \sum_{i=1}^{n} (x_i - c) = 0
+\quad\Longrightarrow\quad
+c = \frac{1}{n} \sum_{i=1}^{n} x_i = \bar{x}
+$$
+
+The second derivative is $2n > 0$, so this point is indeed a minimum. Therefore, the mean is the single value that minimizes the total squared error across all observations.
+
+Keep this connection in mind. When you later encounter loss functions and linear regression, squared-error minimization will appear again. In a sense, these models extend the same idea: they search for predictions that behave like conditional means, given the available features.
+
+A useful extension follows directly from this interpretation. If a dataset is divided into groups and you know each group’s mean, the overall mean is not the simple average of those group means unless the groups are the same size. Instead, it is their size-weighted average:
+
+$$
+\bar{x} = \sum_{g} \frac{n_g}{n} \, \bar{x}_g
+$$
+
+On our dataset the four big flat types have means of \$472,616 (3-room,
+2,929 sales), \$677,754 (4-room, 5,385 sales), \$790,206 (5-room, 2,795
+sales), and \$926,546 (executive, 742 sales). The overall mean leans toward
+the 4-room figure because 4-room sales outnumber executive sales roughly
+seven to one. The weights matter, and [section 8](#8-limitations)
+shows how badly things go when they are ignored.
+
+## 3. Effect of outliers on the mean
+
+Zoom in on one small, real slice: the 29 resales of 3-room flats in Geylang
+in April 2026. Twenty-two of them sold between \$292,000 and \$445,000.
+The other seven sold between \$617,000 and \$850,000.
+
+![Dot plot of all 29 Geylang 3-room resales in April 2026, with the mean line far to the right of the dashed median line](/images/concepts/mean-median-mode/geylang-strip.png)
+
+_Figure 1. One month, one town, one flat type. The mean is \$447,433, the
+median \$358,788. Both are honest computations on the same 29 sales._
+
+The mean of these 29 sales is \$447,433. Read that against the picture: 22
+of the 29 flats, more than three quarters, sold for _less_ than the
+"average" price.  The seven
+expensive sales pulled the balance point up and away from the crowd.
+
+Why exactly does that happen? Because every point owns an equal share of
+the mean. Take the derivative of $\bar{x}$ with respect to any single
+observation $x_j$:
+
+$$
+\frac{\partial \bar{x}}{\partial x_j} = \frac{1}{n}
+$$
+
+Move any one sale by one dollar and the mean moves by $1/n$ dollars,
+_no matter which sale it is and no matter how extreme it already was_.
+
+The animation below focuses on nine of these 29 sales to keep the arithmetic legible.
+
+<AnimatedFigure
+  src="/videos/concepts/mean-median-mode/mean-chases-outlier.mp4"
+  caption="Figure 2. Let's adjust the top sale from $850,000 to $1,600,000. The mean moves while the median does not."
+/>
+
+The animation moves one sale by \$750,000. With nine sales on the line, the
+mean must move by exactly \$750,000 divided by 9, which is \$83,333. The
+median moves by zero, and the next section explains why.
+
+## 4. The median
+
+Sort the values in increasing order and write them $x_{(1)} \le x_{(2)}
+\le \dots \le x_{(n)}$. The median is the middle order statistic: 
+the point at which the number of points to the left is equal to the number of points to the right.
+When $n$ is odd, the median is the middle data point $x_{((n+1)/2)}$ and when $n$ is even, the median is technically
+any value in between $x_{(n/2)}$ and $x_{(n/2)+1}$ but by convention, we take the average of these two values.
+
+For the 29 Geylang sales the median is the 15th sorted
+price, \$358,788. For all 12,243 sales it is \$630,000: half the flats that
+changed hands this half-year went for \$630,000 or less.
+
+The median also solves the same optimization problem, but the penalty here is the absolute distance instead of the squared distance:
+
+$$
+A(c) = \sum_{i=1}^{n} \lvert x_i - c \rvert
+$$
+
+**Intuition.** Stand at some guess $c$
+with $L$ data points strictly to your left and $R$ strictly to your right.
+Step right by a small $\delta$. You walk $\delta$ _away_ from every point
+on the left and $\delta$ _toward_ every point on the right, so the total
+penalty changes by $\delta(L - R)$. Whenever $R > L$, stepping right helps.
+Whenever $L > R$, stepping left helps. You stop improving only where the
+counts balance, which is the middle of the sorted list. The median is the
+one guess that minimizes total absolute error.
+
+Visualising the two penalty functions side by side:
+
+![Two curves through zero, the squared penalty rising steeply and the absolute penalty rising linearly](/images/concepts/mean-median-mode/penalty-curves.png)
+
+_Figure 3. Triple the error and absolute loss triples while squared loss increases ninefolds.
+The mean must shift towards outliers to reduce this loss_
+
+Statisticians make this notion of robustness precise using the _breakdown point_, which measures an estimator's robustness by
+identifying the maximum proportion of outliers that it can handle before producing arbitrarily inaccurate results. As we have observed, 
+one outlier can greatly shift the mean value so its breakdown point is ${1/n}$. The breakdown point of the median is
+0.5 as up to 50% of the data can be arbitrarily large or small without corrupting the median's accuracy.
+
+In practice, a common compromise is 
+the trimmed mean, which discards a small percentage of the smallest and largest observations 
+before averaging the rest. Dropping the most extreme 5% of our price data on each side gives \$647,311, 
+which lies between the median (\$630,000) and the raw mean ($659,717), exactly as expected.
+
+## 5. The mode
+
+The mode refers to the most frequently occurring value. Unlike the mean and median, it also works for categorical data, where there is no meaningful notion of a "middle" or a "balance point." There is no average flat type or median town, but there is certainly a most common one. In our data, the modal flat type is the 4-room flat, accounting for 5,385 of the 12,243 sales (44%), while the modal town (most sales) is Tampines.
+
+For continuous variables such as price however, the exact mode can be misleading. Among the 12,243 sales, there are only 1,425 distinct prices, and the most common price is exactly \$650,000, appearing 152 times. This does not mean \$650,000 is the "centre" of the market. Instead, it partly reflects the tendency to negotiate and record prices at round numbers. The raw mode may therefore capture features of the recording process rather than the overall shape of the distribution.
+
+A better approach is to group nearby prices into intervals before looking for the most common value. Using \$25,000-wide bins, the modal interval is \$600,000–\$625,000, containing 746 sales. This binned mode corresponds to the highest peak in Figure 4 and provides a much more meaningful notion of a "typical" price.
+
+The mode is especially useful for identifying multiple peaks. In such cases, the mean and median may conceal important groups within the data, while the histogram shows where observations actually cluster.
+
+## 6. Differing 'averages'
+
+Here is the full distribution of all 12,243 prices, with both summaries
+drawn in.
+
+![Right-skewed histogram of all resale prices with the mean line to the right of the median line](/images/concepts/mean-median-mode/price-histogram.png)
+
+_Figure 4. The mean of the full dataset sits \$29,717 above the median, and
+56.7% of all sales were below the "average" price._
+
+The mean is 4.7% higher than the median because the distribution has a long upper tail. Prices start near \$240,000, but they extend far higher, with 902 sales, or 7.4% of the total, exceeding \$1 million. These expensive flats pull the mean upward, while the median remains closer to where most sales are concentrated.
+
+This is a common sign of right skew: many observations lie toward the lower end, while a smaller number of large values stretch the distribution to the right. Income, house prices, hospital stays, and website session times often have this shape, which is why the median is frequently reported alongside the mean.
+
+It also shows why the word “average” can be ambiguous. In this dataset, both of the following statements are true:
+
+* The mean resale price is \$659,717.
+* Half of all resale flats cost at most \$630,000.
+
+They describe the same data, but they emphasize different parts of the distribution.
+
+The problem becomes more serious when the data contains more than one distinct group. A single measure of centre works best when the distribution has one meaningful centre. When two different markets are combined, neither the mean nor the median may represent the data well:
+
+
+![Histogram of Woodlands and Queenstown 4-room sales together, forming two separate humps with the mean and median lines between them](/images/concepts/mean-median-mode/two-towns.png)
+
+_Figure 5. 4-room resales in Woodlands (median \$550,000) and Queenstown
+(median \$1,023,000), pooled. The mixture's mean of \$668,548 lands in the
+gap where almost nothing sold. Its median of \$575,000 hides inside the
+Woodlands cluster and ignores Queenstown entirely._
+
+The mean and median are misleading here in different ways. The mean falls between the two clusters, so it represents 
+neither a typical Woodlands flat nor a typical Queenstown flat. The median falls 
+within the Woodlands cluster because Woodlands accounts for most of the observations, 
+but it gives little indication that a second, much more expensive group exists.
+
+When a distribution has two distinct peaks, it is usually more useful to identify what separates the groups and summarize them individually. In this case, the histogram shows that town matters and that a single overall measure of centre does not describe the data well.
+
+## 7. Explore it yourself
+
+The dots below represent nine actual Geylang sales from Figure 1.
+
+<MeanMedianOutlierExplorer />
+
+Try moving the highest-priced sale further to the right and observe how the mean changes. Then move it back toward the main cluster and see when the mean and median 
+become equal. Finally, remove the point entirely and compare how both measures 
+respond. The median may also move because removing a value 
+changes the number and positions of the remaining observations.
+
+## 8. Limitations
+
+**The mean may not reflect a typical value.** In the Geylang data from Section 3, more than three quarters of the flats sold for less than the mean price. This happens because a small number of expensive flats pull the mean upward. When a distribution is skewed, the mean can still be useful, but it should not automatically be interpreted as the value most observations are close to.
+
+**The median may overlook important extremes.** The median is useful because unusually high or low values have little effect on it. However, those values may be important in some situations. A web service can have an acceptable median response time while its slowest requests perform poorly. This is why engineers also monitor percentiles such as p95 and p99 when performance at the upper end matters.
+
+> **Misconception.** “The mean is the correct measure, while the median is only used when the data is messy.”
+> 
+> The mean and median answer different questions. The mean takes every value into account, while the median describes the middle observation. Which one is more useful depends on the distribution and what you are trying to understand.
+
+> **Misconception.** “The mode is only useful for categorical data.”
+> 
+> The exact mode is often less useful for continuous variables, but grouping values into intervals can reveal where observations are most concentrated. A histogram can also show whether the data has one main cluster or several distinct peaks, which may not be clear from the mean or median alone.
+
+## 9. The same numbers in code
+
+How to implement mean, mode, median in Python:
+
+Using only native Python:
+```python
+# finding mean
+def find_mean(data): 
+  return sum(data) / len(data)
+
+# finding median
+def find_median(data):
+  if len(data) % 2 == 0:
+    median = ((sorted(data))[len(data) // 2] +
+              sorted(data)[len(data) // 2 - 1]) / 2
+  else:
+    median = sorted(data)[len(data) // 2]
+  return median
+
+# finding mode
+def find_mode(data):
+  frequencies = {}
+  for item in data:
+    frequencies[item] = frequencies.get(item, 0) + 1
+  max_freq = max(frequencies.values())
+  modes = [key for key, value in frequencies.items() if value == max_freq]
+  return modes
+```
+In Pandas:
+```python
+import pandas as pd
+
+sales = pd.read_csv("resale-2026-h1.csv")
+
+print(sales["resale_price"].mean())    # 659716.97
+print(sales["resale_price"].median())  # 630000.0
+print(sales["flat_type"].mode()[0])    # 4 ROOM
+```
+
+The groupby version exposes the weighted-mean structure from section 2:
+
+```python
+by_type = sales.groupby("flat_type")["resale_price"].agg(["count", "mean"])
+overall = (by_type["count"] * by_type["mean"]).sum() / by_type["count"].sum()
+# overall == sales["resale_price"].mean(), the weights are the group sizes
+```
+
+## 10. What to learn next
+
+A center without a spread is half a summary. The natural next concept is
+**Variance and Spread**, which asks how far the data strays from the
+center you just chose, and inherits the same squared-versus-absolute
+choice you met here. The Geylang tail also deserves its own treatment:
+**Outliers** covers when unusual points are errors to remove and when
+they are the most informative rows in the dataset. Both build directly on
+the mean and median as defined in these notes.
+
+## References
+
+1. HDB resale flat prices (registration date from Jan 2017),
+   [data.gov.sg](https://data.gov.sg/datasets/d_8b84c4ee58e3cfc0ece0d773c8ca6abc/view).
+   The January to June 2026 snapshot used throughout is committed to the
+   repository.
+2. Freedman, D., Pisani, R., and Purves, R. _Statistics_, 4th edition,
+   W. W. Norton, 2007. Chapter 4 treats the average and the histogram
+   with the same skeptical spirit as these notes.
+3. Huff, D. _How to Lie with Statistics_, W. W. Norton, 1954. The classic
+   catalogue of averages chosen to mislead, still accurate seventy years
+   on.

@@ -1,0 +1,7 @@
+---
+// Author-facing wrapper: lets MDX use <MeanMedianOutlierExplorer /> with no
+// imports while keeping the hydration directive out of content files.
+import { MeanMedianOutlierExplorer as Widget } from "@opends/widgets";
+---
+
+<Widget client:visible {...Astro.props} />
